@@ -17,19 +17,19 @@
     </header>
 
     <main>
-        <!-- Tarjetas de balances individuales -->
+        <!-- Tarjetas de balances individuales personalizadas -->
         <section class="balances-individuales">
             <div class="card usuario-a">
-                <h3>Balance Esposo</h3>
+                <h3>Balance Diego</h3>
                 <p id="total-usuario-a">$0.00</p>
             </div>
             <div class="card usuario-b">
-                <h3>Balance Esposa</h3>
+                <h3>Balance Romina</h3>
                 <p id="total-usuario-b">$0.00</p>
             </div>
         </section>
 
-        <!-- Formulario de carga de datos -->
+        <!-- Formulario de carga con nombres automáticos -->
         <section class="formulario-movimiento">
             <h3>📝 Registrar Nuevo Movimiento</h3>
             <form id="form-transaccion">
@@ -44,8 +44,8 @@
                 <div class="form-group">
                     <label for="usuario">¿Quién realiza el movimiento?:</label>
                     <select id="usuario" required>
-                        <option value="esposo">Esposo</option>
-                        <option value="esposa">Esposa</option>
+                        <option value="Diego">Diego</option>
+                        <option value="Romina">Romina</option>
                     </select>
                 </div>
 
@@ -63,7 +63,6 @@
             </form>
         </section>
 
-        <!-- Historial y auditoría de gastos -->
         <section class="historial">
             <h3>📜 Historial y Detalle de Gastos</h3>
             <div class="tabla-contenedor">
@@ -78,9 +77,7 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="lista-transacciones">
-                        <!-- Se procesa de forma dinámica por JS -->
-                    </tbody>
+                    <tbody id="lista-transacciones"></tbody>
                 </table>
             </div>
         </section>

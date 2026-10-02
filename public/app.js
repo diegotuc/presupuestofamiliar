@@ -2,13 +2,12 @@ document.addEventListener("DOMContentLoaded", cargarMovimientos);
 
 const formTransaccion = document.getElementById("form-transaccion");
 
-// Evento para capturar el formulario y mandarlo al backend Node
 formTransaccion.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const movimiento = {
         tipo: document.getElementById("tipo").value,
-        usuario: document.getElementById("usuario").value,
+        usuario: document.getElementById("usuario").value, // Captura "Diego" o "Romina"
         monto: parseFloat(document.getElementById("monto").value),
         descripcion: document.getElementById("descripcion").value
     };
@@ -22,14 +21,13 @@ formTransaccion.addEventListener("submit", async (e) => {
 
         if (res.ok) {
             formTransaccion.reset();
-            cargarMovimientos(); // Recargar de forma reactiva e instantánea
+            cargarMovimientos();
         }
     } catch (error) {
         console.error("Error al registrar movimiento:", error);
     }
 });
 
-// Cargar movimientos directo desde la API de Node
 async function cargarMovimientos() {
     try {
         const res = await fetch('/api/finanzas');
@@ -40,30 +38,34 @@ async function cargarMovimientos() {
     }
 }
 
-// Calcular balances y pintar la UI
 function actualizarInterfaz(movimientos) {
     let totalGlobal = 0;
-    let totalEsposo = 0;
-    let totalEsposa = 0;
+    let totalDiego = 0;
+    let totalRomina = 0;
 
     const listaContenedor = document.getElementById("lista-transacciones");
-    listaContenedor.innerHTML = ""; // Reset de la tabla
+    listaContenedor.innerHTML = ""; 
 
     movimientos.forEach(mov => {
+        // Validación retroactiva: Si dice "esposo" va para Diego, si dice "esposa" va para Romina
+        let usuarioNormalizado = mov.usuario;
+        if (mov.usuario === "esposo") usuarioNormalizado = "Diego";
+        if (mov.usuario === "esposa") usuarioNormalizado = "Romina";
+
         if (mov.tipo === "ingreso") {
             totalGlobal += mov.monto;
-            if (mov.usuario === "esposo") totalEsposo += mov.monto;
-            if (mov.usuario === "esposa") totalEsposa += mov.monto;
+            if (usuarioNormalizado === "Diego") totalDiego += mov.monto;
+            if (usuarioNormalizado === "Romina") totalRomina += mov.monto;
         } else if (mov.tipo === "gasto") {
             totalGlobal -= mov.monto;
-            if (mov.usuario === "esposo") totalEsposo -= mov.monto;
-            if (mov.usuario === "esposa") totalEsposa -= mov.monto;
+            if (usuarioNormalizado === "Diego") totalDiego -= mov.monto;
+            if (usuarioNormalizado === "Romina") totalRomina -= mov.monto;
         }
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${mov.fecha}</td>
-            <td style="text-transform: capitalize;">${mov.usuario}</td>
+            <td style="text-transform: capitalize; font-weight: 500;">${usuarioNormalizado}</td>
             <td>${mov.descripcion}</td>
             <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">${mov.tipo.toUpperCase()}</td>
             <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">
@@ -74,15 +76,13 @@ function actualizarInterfaz(movimientos) {
         listaContenedor.appendChild(tr);
     });
 
-    // Formatear visualmente las tarjetas en pantalla
     document.getElementById("total-global").innerText = `$${totalGlobal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    document.getElementById("total-usuario-a").innerText = `$${totalEsposo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    document.getElementById("total-usuario-b").innerText = `$${totalEsposa.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById("total-usuario-a").innerText = `$${totalDiego.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById("total-usuario-b").innerText = `$${totalRomina.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Petición DELETE a la API de Node
 async function eliminarMovimiento(id) {
-    if (confirm("¿Estás seguro de que querés borrar de forma permanente este movimiento del registro?")) {
+    if (confirm("¿Estás seguro de que querés borrar este movimiento?")) {
         try {
             const res = await fetch(`/api/finanzas/${id}`, { method: 'DELETE' });
             if (res.ok) {
