@@ -1,36 +1,3 @@
 {
-  "movimientos": [
-    {
-      "id": 1790963489741,
-      "fecha": "2/10/2026",
-      "tipo": "gasto",
-      "usuario": "Diego",
-      "monto": 5000,
-      "descripcion": "helado de crema"
-    },
-    {
-      "id": 1790963410145,
-      "fecha": "2/10/2026",
-      "tipo": "ingreso",
-      "usuario": "Romina",
-      "monto": 50000,
-      "descripcion": "trabajo de peluqueria"
-    },
-    {
-      "id": 1790963377485,
-      "fecha": "2/10/2026",
-      "tipo": "gasto",
-      "usuario": "Diego",
-      "monto": 2500,
-      "descripcion": "pan(efectivo)"
-    },
-    {
-      "id": 1790963280532,
-      "fecha": "2/10/2026",
-      "tipo": "ingreso",
-      "usuario": "Diego",
-      "monto": 10000,
-      "descripcion": "varios"
-    }
-  ]
+  "movimientos": []
 }
