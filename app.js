@@ -250,3 +250,58 @@ function exportarExcel() {
     for (let i = 1; i < filas.length; i++) {
         let celdas = filas[i].cells;
         // Si la tabla muestra la fila de "No hay movimientos", no exportamos contenido vacío
+        if (celdas.length < 5) continue; 
+        let fecha = celdas[0].innerText;
+        let miembro = celdas[1].innerText;
+        let detalle = celdas[2].innerText.replace(/,/g, " "); // Quitar comas para no romper columnas
+        let tipo = celdas[3].innerText;
+        let monto = celdas[4].innerText.replace(/[+\$ ]/g, "").replace(/\./g, "").replace(",", "."); // Limpiar a número puro
+
+        contenidoCsv += `${fecha},${miembro},${detalle},${tipo},${monto}\n`;
+    }
+
+    // Configurar descarga con soporte UTF-8 (BOM) para acentos y signos de pesos en Excel Latinoamericano
+    const blob = new Blob(["\ufeff" + contenidoCsv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Reporte_Presupuesto_${filtroActivo.toUpperCase()}_${obtenerFechaHoyString().replace(/\//g, "-")}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function eliminarMovimiento(id) {
+    if (confirm("¿Estás seguro de que querés borrar este movimiento?")) {
+        try {
+            const datosGuardados = localStorage.getItem('mis_movimientos');
+            let movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
+
+            movimientos = movimientos.filter(mov => mov.id !== id);
+            localStorage.setItem('mis_movimientos', JSON.stringify(movimientos));
+
+            cargarMovimientos();
+        } catch (error) {
+            console.error("Error al intentar eliminar el registro:", error);
+        }
+    }
+}
+
+// Formateadores rápidos
+function obtenerFechaHoyString() {
+    const hoy = new Date();
+    return `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
+}
+
+function obtenerLlaveMesActualString() {
+    const hoy = new Date();
+    return `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
+}
+
+function formatMoneda(valor) {
+    return `$${valor.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
