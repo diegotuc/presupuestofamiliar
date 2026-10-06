@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Presupuesto del Hogar Saltor Martínez</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏡 Control de Presupuesto</h1>
+        <h2>Hogar Saltor Martínez</h2>
+        <div class="balance-global">
+            <h3>Fondo Total Sincronizado</h3>
+            <p id="total-global">$0.00</p>
+        </div>
+    </header>
+
+    <main>
+        <!-- Tarjetas de balances individuales personalizadas -->
+        <section class="balances-individuales">
+            <div class="card usuario-a">
+                <h3>Balance Diego</h3>
+                <p id="total-usuario-a">$0.00</p>
+            </div>
+            <div class="card usuario-b">
+                <h3>Balance Romina</h3>
+                <p id="total-usuario-b">$0.00</p>
+            </div>
+        </section>
+
+        <!-- Formulario de carga con nombres automáticos -->
+        <section class="formulario-movimiento">
+            <h3>📝 Registrar Nuevo Movimiento</h3>
+            <form id="form-transaccion">
+                <div class="form-group">
+                    <label for="tipo">Tipo de Operación:</label>
+                    <select id="tipo" required>
+                        <option value="ingreso">Ingreso (Entrada de Dinero)</option>
+                        <option value="gasto">Gasto (Salida / Malgasto)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="usuario">¿Quién realiza el movimiento?:</label>
+                    <select id="usuario" required>
+                        <option value="Diego">Diego</option>
+                        <option value="Romina">Romina</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="monto">Monto ($):</label>
+                    <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Detalle, Origen o Concepto:</label>
+                    <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta, Gustito" required>
+                </div>
+
+                <button type="submit" class="btn-guardar">Guardar Movimiento</button>
+            </form>
+        </section>
+
+        <section class="historial">
+            <h3>📜 Historial y Detalle de Gastos</h3>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Miembro</th>
+                            <th>Detalle / Concepto</th>
+                            <th>Tipo</th>
+                            <th>Monto</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-transacciones"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Enlace directo al archivo JavaScript en la raíz -->
+    <script src="app.js"></script>
+</body>
+</html>
