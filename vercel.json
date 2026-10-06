@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/api/finanzas", "destination": "/server.js" }
+  ]
+}

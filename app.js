@@ -9,12 +9,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const formTransaccion = document.getElementById("form-transaccion");
 
-formTransaccion.addEventListener("submit", (e) => {
+// MODIFICACIÓN EN EL FORMULARIO (POST)
+formTransaccion.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const hoy = new Date();
     const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
-    const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`; // Formato "MM-AAAA"
+    const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
 
     const movimiento = {
         id: Date.now(),
@@ -27,38 +28,31 @@ formTransaccion.addEventListener("submit", (e) => {
     };
 
     try {
-        // Los movimientos activos se guardan siempre en la lista del mes corriente
-        const datosGuardados = localStorage.getItem('mis_movimientos');
-        let movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
+        // Enviar directo a MongoDB a través de Vercel
+        const res = await fetch('/api/finanzas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(movimiento)
+        });
 
-        movimientos.unshift(movimiento);
-        localStorage.setItem('mis_movimientos', JSON.stringify(movimientos));
-
-        formTransaccion.reset();
-        
-        // Si estábamos visualizando el archivo, forzamos la vista al día para ver el ingreso
-        if (filtroActivo === 'archivo') {
-            cambiarFiltro('hoy');
-        } else {
+        if (res.ok) {
+            formTransaccion.reset();
             cargarMovimientos();
         }
-
     } catch (error) {
         console.error("Error al registrar movimiento:", error);
     }
 });
-
-function cargarMovimientos() {
+// MODIFICACIÓN EN LA CARGA (GET)
+async function cargarMovimientos() {
     try {
-        const datosGuardados = localStorage.getItem('mis_movimientos');
-        const movimientosMesActual = datosGuardados ? JSON.parse(datosGuardados) : [];
+        // Traer datos de MongoDB en tiempo real
+        const res = await fetch('/api/finanzas');
+        const datos = await res.json();
+        const movimientosMesActual = datos.movimientos || [];
         
-        // Calcular y renderizar balances superiores fijos e interfaz global
         actualizarTodosLosBalances(movimientosMesActual);
-        
-        // Filtrar y renderizar la tabla según la pestaña activa
         procesarYRenderizarTabla(movimientosMesActual);
-
     } catch (error) {
         console.error("Error al cargar los movimientos:", error);
     }
@@ -274,16 +268,15 @@ function exportarExcel() {
     document.body.removeChild(link);
 }
 
-function eliminarMovimiento(id) {
+// MODIFICACIÓN AL ELIMINAR (DELETE)
+async function eliminarMovimiento(id) {
     if (confirm("¿Estás seguro de que querés borrar este movimiento?")) {
         try {
-            const datosGuardados = localStorage.getItem('mis_movimientos');
-            let movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
-
-            movimientos = movimientos.filter(mov => mov.id !== id);
-            localStorage.setItem('mis_movimientos', JSON.stringify(movimientos));
-
-            cargarMovimientos();
+            // Eliminar de MongoDB usando el ID único
+            const res = await fetch(`/api/finanzas?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                cargarMovimientos();
+            }
         } catch (error) {
             console.error("Error al intentar eliminar el registro:", error);
         }
