@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 const formTransaccion = document.getElementById("form-transaccion");
 
 // MODIFICACIÓN EN EL FORMULARIO (POST)
+// 1. REGISTRAR MOVIMIENTO (POST) - Línea aproximada 25
 formTransaccion.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -28,8 +29,8 @@ formTransaccion.addEventListener("submit", async (e) => {
     };
 
     try {
-        // Enviar directo a MongoDB a través de Vercel
-        const res = await fetch('/api/finanzas', {
+        // CORRECCIÓN AQUÍ: apuntar a /api/server
+        const res = await fetch('/api/server', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(movimiento)
@@ -43,11 +44,13 @@ formTransaccion.addEventListener("submit", async (e) => {
         console.error("Error al registrar movimiento:", error);
     }
 });
+
 // MODIFICACIÓN EN LA CARGA (GET)
+// 2. CARGAR MOVIMIENTOS (GET) - Línea aproximada 52
 async function cargarMovimientos() {
     try {
-        // Traer datos de MongoDB en tiempo real
-        const res = await fetch('/api/finanzas');
+        // CORRECCIÓN AQUÍ: apuntar a /api/server
+        const res = await fetch('/api/server');
         const datos = await res.json();
         const movimientosMesActual = datos.movimientos || [];
         
@@ -269,11 +272,12 @@ function exportarExcel() {
 }
 
 // MODIFICACIÓN AL ELIMINAR (DELETE)
+// 3. ELIMINAR MOVIMIENTO (DELETE) - Línea aproximada 272
 async function eliminarMovimiento(id) {
     if (confirm("¿Estás seguro de que querés borrar este movimiento?")) {
         try {
-            // Eliminar de MongoDB usando el ID único
-            const res = await fetch(`/api/finanzas?id=${id}`, { method: 'DELETE' });
+            // CORRECCIÓN AQUÍ: apuntar a /api/server
+            const res = await fetch(`/api/server?id=${id}`, { method: 'DELETE' });
             if (res.ok) {
                 cargarMovimientos();
             }
