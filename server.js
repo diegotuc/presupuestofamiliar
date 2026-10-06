@@ -1,6 +1,5 @@
-const { MongoClient, ObjectId } = require('mongodb');
+const { MongoClient } = require('mongodb');
 
-// Leer la URL de conexión desde las variables seguras de Vercel
 const uri = process.env.MONGODB_URI;
 let client;
 let db;
@@ -9,14 +8,22 @@ async function conectarDB() {
     if (!client) {
         client = new MongoClient(uri);
         await client.connect();
-        db = client.db('PresupuestoHogar'); // Nombre de tu Base de Datos
+        db = client.db('PresupuestoHogar'); // Tu base de datos creada en Compass
     }
-    return db.collection('movimientos'); // Nombre de tu Colección
+    return db.collection('movimientos'); // Tu tabla creada en Compass
 }
 
-// Exportar la función controladora compatible con el entorno Serverless de Vercel
+// Función auxiliar para leer el cuerpo de la petición (body) en Vercel
+async function leerBody(req) {
+    return new Promise((resolve) => {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => { resolve(JSON.parse(body || '{}')); });
+    });
+}
+
 module.exports = async (req, res) => {
-    // Habilitar CORS para que tu celular y PC puedan conectarse sin bloqueos
+    // Habilitar CORS para evitar bloqueos entre celular y PC
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -36,14 +43,17 @@ module.exports = async (req, res) => {
 
         // 2. GUARDAR MOVIMIENTO (POST)
         if (req.method === 'POST') {
-            const nuevoMovimiento = req.body;
+            const nuevoMovimiento = await leerBody(req);
             await coleccion.insertOne(nuevoMovimiento);
-            return res.status(201).json({ mensaje: 'Movimiento guardado en MongoDB' });
+            return res.status(201).json({ mensaje: 'Movimiento guardado' });
         }
 
         // 3. ELIMINAR MOVIMIENTO (DELETE)
         if (req.method === 'DELETE') {
-            const { id } = req.query; // Captura el id desde la URL
+            // Conseguir el ID desde los parámetros de la URL
+            const urlParams = new URL(req.url, `http://${req.headers.host}`);
+            const id = urlParams.searchParams.get('id');
+            
             await coleccion.deleteOne({ id: parseInt(id) });
             return res.status(200).json({ mensaje: 'Movimiento eliminado' });
         }
@@ -51,7 +61,7 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Método no permitido' });
 
     } catch (error) {
-        console.error("Error en el servidor:", error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        console.error("Error crítico en servidor:", error);
+        return res.status(500).json({ error: error.message });
     }
 };
