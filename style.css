@@ -9,7 +9,7 @@
 }
 
 * {
-    box-sizing: border-box; /* Crucial para que los paddings no rompan los anchos en móvil */
+    box-sizing: border-box; /* Evita que los elementos se desborden por el padding */
 }
 
 body {
@@ -17,14 +17,13 @@ body {
     background-color: var(--bg-main);
     color: var(--primary-color);
     margin: 0;
-    padding: 10px; /* Reducido a 10px para maximizar espacio en pantallas chicas */
+    padding: 10px; /* Espacio mínimo para que no pegue a los bordes del celu */
 }
 
-/* Envoltura global para limitar el ancho y centrar absolutamente todo el sitio */
 .dashboard-container {
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    width: 100%;
 }
 
 header {
@@ -32,177 +31,185 @@ header {
     flex-direction: column;
     align-items: center; 
     text-align: center;
-    margin-bottom: 20px;
-    margin-top: 10px;
+    margin: 15px 0;
     width: 100%;
 }
 
-header h1 {
-    margin: 0 0 5px 0;
-    font-size: 1.8rem; /* Tamaño adaptativo para móvil */
-}
+header h1 { margin: 0 0 5px 0; font-size: 1.6rem; }
+header h2 { margin: 0; font-size: 1.2rem; font-weight: 500; color: #566573; }
 
-header h2 {
-    margin: 0;
-    font-size: 1.3rem;
-    font-weight: 500;
-    color: #566573;
-}
-
+/* --- Balances superiores (Fondo Total y Balance de Hoy) --- */
 .contenedor-balances-top {
     display: flex;
-    justify-content: center;
-    align-items: center;   
-    gap: 15px;             /* Reducido un poco para que entre mejor */
-    margin-top: 20px;
-    margin-bottom: 25px;
-    flex-wrap: wrap;       /* Permite que se apilen en celulares estrechos */
-    width: 100%;           
+    flex-direction: column; /* En celular van uno abajo del otro obligatoriamente */
+    gap: 12px;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 .balance-global, .balance-diario {
-    background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    padding: 15px 20px;
+    padding: 15px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     text-align: center;
-    
-    /* Corregido para colapsar fluidamente */
-    flex: 1 1 260px;       /* Cambiado a base de 260px para celulares pequeños */
-    max-width: 360px;      /* Límite estético para que no se deformen en PC */
+    width: 100%;
 }
+.balance-global { background: linear-gradient(135deg, #2c3e50, #34495e); }
+.balance-diario { background: linear-gradient(135deg, #16a085, #2ce6a4); }
 
-.balance-diario {
-    background: linear-gradient(135deg, #16a085, #2ce6a4);
-}
+.balance-global h3, .balance-diario h3 { margin: 0; font-size: 0.85rem; opacity: 0.9; }
+.balance-global p, .balance-diario p { margin: 5px 0 0 0; font-size: 1.5rem; font-weight: bold; }
 
-.balance-global h3, .balance-diario h3 { 
-    margin: 0; 
-    font-size: 0.9rem; 
-    opacity: 0.9; 
-}
 
-.balance-global p, .balance-diario p { 
-    margin: 8px 0 0 0; 
-    font-size: 1.6rem; /* Ajustado levemente para evitar desbordes de texto */
-    font-weight: bold; 
-}
-
-/* Grid Dashboard de 2 Columnas */
+/* --- DISEÑO PARA CELULAR POR DEFECTO (Columnas apiladas) --- */
 .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     width: 100%;
 }
 
-/* Tarjetas e Inputs generales */
-.card-historial, .formulario-movimiento, .card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+.columna-izquierda, .columna-derecha {
+    width: 100%;
 }
 
+/* Tarjetas individuales de Diego y Romina en Celular */
 .balances-individuales {
     display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap; 
+    flex-direction: column; /* En celular van uno abajo del otro para que no se corten */
+    gap: 10px;
+    margin-bottom: 15px;
     width: 100%;
 }
 
 .card { 
-    flex: 1 1 140px; /* Bajado a 140px para que entren juntas en casi cualquier celular */
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     text-align: center; 
     border-left: 5px solid #ccc; 
-    padding: 12px;
+    width: 100%;
 }
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
 .card h3 { margin: 0; font-size: 0.85rem; color: #7f8c8d; }
-.card p { margin: 6px 0 0 0; font-size: 1.2rem; font-weight: bold; }
+.card p { margin: 5px 0 0 0; font-size: 1.3rem; font-weight: bold; }
 
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; font-weight: 500; margin-bottom: 5px; font-size: 0.9rem; }
+/* Formulario */
+.formulario-movimiento, .card-historial {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    width: 100%;
+}
+.formulario-movimiento h3 { margin-top: 0; font-size: 1.1rem; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 0.85rem; }
 .form-group select, .form-group input {
-    width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; font-size: 1rem;
+    width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; font-size: 0.95rem; background-color: #fff;
 }
 
 .btn-guardar {
-    width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s;
+    width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; margin-top: 5px;
 }
-.btn-guardar:hover { background-color: #1a252f; }
 
-/* Estilos de la Card de Historial Autocontenida */
+/* Panel de registros e Historial */
 .historial-cabecera {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
     border-bottom: 2px solid #f4f7f6;
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
 }
-.historial-cabecera h3 { margin: 0; }
+.historial-cabecera h3 { margin: 0; font-size: 1.1rem; }
 
-.pestanas-filtros { 
-    display: flex; 
-    gap: 5px; 
-    flex-wrap: wrap; /* Evita que los botones "Hoy", "Mes en curso" se pisen */
-}
+.pestanas-filtros { display: flex; gap: 4px; width: 100%; }
 .btn-tab {
-    padding: 8px 12px; border: none; background-color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.8rem; transition: all 0.2s;
+    flex: 1; text-align: center; padding: 8px 4px; border: none; background-color: #e2e8f0; border-radius: 6px; font-weight: 500; font-size: 0.75rem; cursor: pointer;
 }
 .btn-tab.activo { background-color: var(--accent-color); color: white; }
 
-.acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+.acciones-historial { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .btn-accion {
-    padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
-    flex: 1 1 150px; /* Se expanden equitativamente y bajan de forma limpia */
-    text-align: center;
+    width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-align: center; cursor: pointer;
 }
 .btn-excel { background-color: #27ae60; color: white; }
 .btn-cierre { background-color: #f39c12; color: white; }
 
-/* Scroll Interno de la Tabla */
+/* Contenedor de la Tabla con scroll horizontal interno obligatorio */
 .tabla-contenedor {
-    max-height: 480px;
+    max-height: 400px;
     overflow-y: auto;
     overflow-x: auto; 
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #e2e8f0; }
-th, td { padding: 12px; border-bottom: 1px solid #edf2f7; white-space: nowrap; /* Evita que los textos rompan líneas feamente dentro de las celdas */ }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; }
+th, td { padding: 10px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
 
 .txt-ingreso { color: var(--ingreso-color); font-weight: bold; }
 .txt-gasto { color: var(--gasto-color); font-weight: bold; }
 .btn-borrar { background: none; border: none; cursor: pointer; font-size: 1rem; }
 
-.selector-archivo-oculto { display: none; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
-.selector-archivo-visible { display: block; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
+.selector-archivo-oculto { display: none; }
+.selector-archivo-visible { display: block; margin-bottom: 12px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 
-/* --- Media Queries unificados para cambios de pantalla --- */
-@media (max-width: 900px) {
-    .dashboard-grid { 
-        grid-template-columns: 1fr; /* Pasa a una sola columna en tablets/móviles */
-    }
-}
 
-@media (max-width: 480px) {
-    body {
-        padding: 8px;
+/* --- VISTA PARA PC / PANTALLAS GRANDES (A partir de 850px) --- */
+@media (min-width: 850px) {
+    body { padding: 20px; }
+    
+    header h1 { font-size: 2.2rem; }
+    header h2 { font-size: 1.4rem; }
+
+    /* Los balances top se ponen uno al lado del otro en PC */
+    .contenedor-balances-top {
+        flex-direction: row;
+        justify-content: center;
+        gap: 20px;
     }
-    .card-historial, .formulario-movimiento {
-        padding: 15px; /* Menos espacio interno en celulares para ganar pantalla */
+    .balance-global, .balance-diario {
+        width: 320px;
     }
-    .balance-global p, .balance-diario p {
-        font-size: 1.4rem; /* Achica un poco el tamaño de los números grandes */
+    
+    /* El diseño pasa a ser una grilla de dos columnas perfectamente distribuida */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 25px;
+        align-items: start;
     }
+
+    /* Las tarjetas de Diego y Romina se ponen una al lado de la otra en PC */
+    .balances-individuales {
+        flex-direction: row;
+        gap: 15px;
+    }
+    .card { flex: 1; }
+
+    /* El encabezado del historial se vuelve horizontal */
+    .historial-cabecera {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .pestanas-filtros { width: auto; }
+    .btn-tab { padding: 8px 15px; font-size: 0.85rem; }
+
+    /* Los botones de acción se alinean uno al lado del otro */
+    .acciones-historial {
+        flex-direction: row;
+    }
+    .btn-accion { width: auto; padding: 10px 20px; }
+    
+    .formulario-movimiento, .card-historial { padding: 20px; }
 }
