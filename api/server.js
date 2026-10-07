@@ -86,8 +86,28 @@ app.delete('/api/server', async (req, res) => {
     }
 });
 
-// 4. RUTA COMODÍN (Cualquier otra ruta carga el index.html)
-app.get('*', (req, res) => {
+// DELETE: Eliminar movimiento
+app.delete('/api/server', async (req, res) => {
+    try {
+        const id = req.query.id;
+        if (!id) {
+            return res.status(400).json({ error: 'ID requerido' });
+        }
+
+        const coleccion = await conectarDB();
+        await coleccion.deleteOne({ id: parseInt(id) });
+        return res.status(200).json({ mensaje: 'Movimiento eliminado con éxito' });
+    } catch (error) {
+        console.error("Error en DELETE /api/server:", error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+// 4. RUTA COMODÍN UNIVERSAL SEGURA (Reemplaza al app.get)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
     res.sendFile(path.join(rootPath, 'index.html'));
 });
 
