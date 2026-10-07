@@ -189,5 +189,6 @@ function obtenerFechaHoyString() {
 }
 
 function formatMoneda(valor) {
+    if (typeof valor !== 'number') valor = parseFloat(valor) || 0;
     return (valor >= 0 ? '' : '-') + '\$' + Math.abs(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
