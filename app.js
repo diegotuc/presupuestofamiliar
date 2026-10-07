@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 const formTransaccion = document.getElementById("form-transaccion");
 
 // MODIFICACIÓN EN EL FORMULARIO (POST)
-// 1. REGISTRAR MOVIMIENTO (POST) - Línea aproximada 25
+// 1. REGISTRAR MOVIMIENTO (POST)
 formTransaccion.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -29,8 +29,8 @@ formTransaccion.addEventListener("submit", async (e) => {
     };
 
     try {
-        // CORRECCIÓN AQUÍ: apuntar a /api/server
-        const res = await fetch('/api/server', {
+        // CORRECCIÓN: Apuntar a la URL absoluta del servidor en Render
+        const res = await fetch('https://onrender.com', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(movimiento)
@@ -46,11 +46,11 @@ formTransaccion.addEventListener("submit", async (e) => {
 });
 
 // MODIFICACIÓN EN LA CARGA (GET)
-// 2. CARGAR MOVIMIENTOS (GET) - Línea aproximada 52
+// 2. CARGAR MOVIMIENTOS (GET)
 async function cargarMovimientos() {
     try {
-        // CORRECCIÓN AQUÍ: apuntar a /api/server
-        const res = await fetch('/api/server');
+        // CORRECCIÓN: Apuntar a la URL absoluta del servidor en Render
+        const res = await fetch('https://onrender.com');
         const datos = await res.json();
         const movimientosMesActual = datos.movimientos || [];
         
@@ -58,6 +58,26 @@ async function cargarMovimientos() {
         procesarYRenderizarTabla(movimientosMesActual);
     } catch (error) {
         console.error("Error al cargar los movimientos:", error);
+    }
+}
+
+// 3. FUNCIÓN PARA ELIMINAR MOVIMIENTO (DELETE)
+async function eliminarMovimiento(id) {
+    if (!confirm("¿Estás seguro de que deseas eliminar este movimiento?")) return;
+    
+    try {
+        // CORRECCIÓN: Apuntar a la URL absoluta del servidor en Render enviando el id como parámetro
+        const res = await fetch(`https://onrender.com?id=${id}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            cargarMovimientos();
+        } else {
+            alert("No se pudo eliminar el movimiento.");
+        }
+    } catch (error) {
+        console.error("Error al eliminar movimiento:", error);
     }
 }
 
@@ -204,90 +224,6 @@ function inicializarArchivo() {
     }
 }
 
-function actualizarSelectMesesArchivados() {
-    const select = document.getElementById("selector-meses");
-    select.innerHTML = "";
-    
-    const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-    const llavesMeses = Object.keys(archivoHistorico);
-
-    if (llavesMeses.length === 0) {
-        select.innerHTML = `<option value="">No hay meses cerrados aún</option>`;
-        mesSeleccionadoArchivo = '';
-        return;
-    }
-
-    llavesMeses.forEach(mes => {
-        const option = document.createElement("option");
-        option.value = mes;
-        option.innerText = `Mes Cerrado: ${mes}`;
-        select.appendChild(option);
-    });
-
-    if (!mesSeleccionadoArchivo || !archivoHistorico[mesSeleccionadoArchivo]) {
-        mesSeleccionadoArchivo = llavesMeses[0];
-    }
-    select.value = mesSeleccionadoArchivo;
-}
-
-function cargarMesArchivado() {
-    mesSeleccionadoArchivo = document.getElementById("selector-meses").value;
-    cargarMovimientos();
-}
-
-// Función para Exportar la Tabla que esté visible en Pantalla a EXCEL (CSV)
-function exportarExcel() {
-    const tabla = document.querySelector("table");
-    let filas = Array.from(tabla.rows);
-    
-    // Cabecera de texto CSV estándar
-    let contenidoCsv = "Fecha,Miembro,Detalle / Concepto,Tipo,Monto\n";
-
-    // Omitimos la primera fila (encabezado) y recorremos los registros mostrados
-    for (let i = 1; i < filas.length; i++) {
-        let celdas = filas[i].cells;
-        // Si la tabla muestra la fila de "No hay movimientos", no exportamos contenido vacío
-        if (celdas.length < 5) continue; 
-        let fecha = celdas[0].innerText;
-        let miembro = celdas[1].innerText;
-        let detalle = celdas[2].innerText.replace(/,/g, " "); // Quitar comas para no romper columnas
-        let tipo = celdas[3].innerText;
-        let monto = celdas[4].innerText.replace(/[+\$ ]/g, "").replace(/\./g, "").replace(",", "."); // Limpiar a número puro
-
-        contenidoCsv += `${fecha},${miembro},${detalle},${tipo},${monto}\n`;
-    }
-
-    // Configurar descarga con soporte UTF-8 (BOM) para acentos y signos de pesos en Excel Latinoamericano
-    const blob = new Blob(["\ufeff" + contenidoCsv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Reporte_Presupuesto_${filtroActivo.toUpperCase()}_${obtenerFechaHoyString().replace(/\//g, "-")}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// MODIFICACIÓN AL ELIMINAR (DELETE)
-// 3. ELIMINAR MOVIMIENTO (DELETE) - Línea aproximada 272
-async function eliminarMovimiento(id) {
-    if (confirm("¿Estás seguro de que querés borrar este movimiento?")) {
-        try {
-            // CORRECCIÓN AQUÍ: apuntar a /api/server
-            const res = await fetch(`/api/server?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                cargarMovimientos();
-            }
-        } catch (error) {
-            console.error("Error al intentar eliminar el registro:", error);
-        }
-    }
-}
-
-// Formateadores rápidos
 function obtenerFechaHoyString() {
     const hoy = new Date();
     return `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
@@ -299,6 +235,5 @@ function obtenerLlaveMesActualString() {
 }
 
 function formatMoneda(valor) {
-    return `$${valor.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return (valor >= 0 ? '' : '-') + '\$' + Math.abs(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
