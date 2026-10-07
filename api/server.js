@@ -5,14 +5,22 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render usa el puerto 10000 por defecto
 const uri = process.env.MONGODB_URI;
 
-app.use(cors());
+// 1. Configurar CORS sin restricciones para evitar bloqueos en celulares
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
-// Servir la vista (HTML/CSS/JS de la raíz) de forma automática
-app.use(express.static(path.join(__dirname, '../')));
+// 2. SERVIR ARCHIVOS ESTÁTICOS PRIMERO (Esto evita que se congele el app.js y style.css)
+// Le indica a Express que busque index.html, app.js y style.css en la carpeta raíz del proyecto
+const rootPath = path.join(__dirname, '../');
+app.use(express.static(rootPath));
 
 let client;
 let db;
@@ -27,11 +35,11 @@ async function conectarDB() {
     });
     await client.connect();
     db = client.db('PresupuestoHogar');
-    console.log("==> Conectado con éxito a MongoDB Atlas");
     return db.collection('movimientos');
 }
 
-// 1. OBTENER MOVIMIENTOS (GET)
+// 3. RUTAS DE LA API
+// GET: Obtener movimientos
 app.get('/api/server', async (req, res) => {
     try {
         const coleccion = await conectarDB();
@@ -43,7 +51,7 @@ app.get('/api/server', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MOVIMIENTO (POST)
+// POST: Guardar movimiento
 app.post('/api/server', async (req, res) => {
     try {
         const coleccion = await conectarDB();
@@ -61,7 +69,7 @@ app.post('/api/server', async (req, res) => {
     }
 });
 
-// 3. ELIMINAR MOVIMIENTO (DELETE)
+// DELETE: Eliminar movimiento
 app.delete('/api/server', async (req, res) => {
     try {
         const id = req.query.id;
@@ -78,19 +86,10 @@ app.delete('/api/server', async (req, res) => {
     }
 });
 
-// Si no es una ruta de la API, envía el index.html de forma directa y universal
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api')) {
-        return next();
-    }
-    res.sendFile(path.join(__dirname, '../index.html'));
+// 4. RUTA COMODÍN (Cualquier otra ruta carga el index.html)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(rootPath, 'index.html'));
 });
-
-app.listen(PORT, () => {
-    console.log(`==> Servidor corriendo en el puerto ${PORT}`);
-});
-
-
 
 app.listen(PORT, () => {
     console.log(`==> Servidor corriendo en el puerto ${PORT}`);
