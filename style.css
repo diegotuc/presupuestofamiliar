@@ -17,29 +17,39 @@ body {
 }
 
 header {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra horizontalmente todo el contenido */
     text-align: center;
     margin-bottom: 25px;
+    width: 100%;
 }
+
 
 .contenedor-balances-top {
     display: flex;
     justify-content: center;
+    align-items: center;    /* Alinea las tarjetas perfectamente si tienen alturas distintas */
     gap: 20px;
     margin-top: 15px;
     flex-wrap: wrap;
+    width: 100%;            /* Toma todo el ancho disponible para poder centrar */
 }
 
-/* MODIFICADO: Cambiado min-width por max-width y width 100% para que se adapten a pantallas chicas sin romper */
+
 .balance-global, .balance-diario {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
     padding: 15px 30px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 320px;
-    box-sizing: border-box; /* Asegura que el padding no sume tamaño extra */
+    
+    /* MODIFICADO PARA CENTRADO PERFECTO: */
+    flex: 1 1 280px;       /* Crecen igual, pero se adaptan desde una base de 280px */
+    max-width: 340px;      /* Evita que se estiren demasiado en pantallas anchas */
+    box-sizing: border-box;
 }
+
 
 .balance-diario {
     background: linear-gradient(135deg, #16a085, #2ce6a4);
