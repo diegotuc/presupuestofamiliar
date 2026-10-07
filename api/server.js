@@ -79,9 +79,10 @@ app.delete('/api/server', async (req, res) => {
 });
 
 // Redirigir cualquier otra ruta al index.html
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, '../index.html'));
 });
+
 
 app.listen(PORT, () => {
     console.log(`==> Servidor corriendo en el puerto ${PORT}`);
