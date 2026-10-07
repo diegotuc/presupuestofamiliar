@@ -29,7 +29,8 @@ if (formTransaccion) {
         };
 
         try {
-            const res = await fetch('https://onrender.com', {
+            // USAR RUTA RELATIVA LIMPIA
+            const res = await fetch('/api/server', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(movimiento)
@@ -50,7 +51,8 @@ if (formTransaccion) {
 // 2. CARGAR MOVIMIENTOS (GET)
 async function cargarMovimientos() {
     try {
-        const res = await fetch('https://onrender.com');
+        // USAR RUTA RELATIVA LIMPIA
+        const res = await fetch('/api/server');
         const datos = await res.json();
         const movimientosMesActual = datos.movimientos || [];
         
@@ -66,7 +68,8 @@ async function eliminarMovimiento(id) {
     if (!confirm("¿Estás seguro de que deseas eliminar este movimiento?")) return;
     
     try {
-        const res = await fetch(`https://onrender.com?id=${id}`, {
+        // USAR RUTA RELATIVA LIMPIA
+        const res = await fetch(`/api/server?id=${id}`, {
             method: 'DELETE'
         });
 
@@ -169,12 +172,35 @@ function renderizarFilasTabla(movimientos) {
     });
 }
 
+// Cambiar de Pestaña de Filtros
 function cambiarFiltro(nuevoFiltro) {
     filtroActivo = nuevoFiltro;
     document.querySelectorAll(".btn-tab").forEach(btn => btn.classList.remove("activo"));
     const tabBtn = document.getElementById(`tab-${nuevoFiltro}`);
     if (tabBtn) tabBtn.classList.add("activo");
     cargarMovimientos();
+}
+
+// Cierre Mensual
+function ejecutarCierreMensual() {
+    const datosGuardados = localStorage.getItem('mis_movimientos');
+    const movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
+
+    if (movimientos.length === 0) {
+        alert("No hay movimientos en el mes actual para cerrar.");
+        return;
+    }
+
+    const fechaRef = movimientos[0].llaveMes || obtenerLlaveMesActualString();
+    
+    if (confirm(`¿Estás seguro de cerrar el período de este mes (${fechaRef})?\nSe archivará de manera definitiva.`)) {
+        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
+        archivoHistorico[fechaRef] = movimientos;
+        localStorage.setItem('archivo_historico', JSON.stringify(archivoHistorico));
+        localStorage.setItem('mis_movimientos', JSON.stringify([]));
+        alert(`Período ${fechaRef} cerrado con éxito.`);
+        cambiarFiltro('hoy');
+    }
 }
 
 function inicializarArchivo() {
