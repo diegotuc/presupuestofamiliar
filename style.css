@@ -13,7 +13,7 @@ body {
     background-color: var(--bg-main);
     color: var(--primary-color);
     margin: 0;
-    padding: 20px;
+    padding: 15px; /* MODIFICADO: Un poco menos de padding para dar más espacio en celulares */
 }
 
 header {
@@ -29,13 +29,16 @@ header {
     flex-wrap: wrap;
 }
 
+/* MODIFICADO: Cambiado min-width por max-width y width 100% para que se adapten a pantallas chicas sin romper */
 .balance-global, .balance-diario {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
     padding: 15px 30px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    min-width: 220px;
+    width: 100%;
+    max-width: 320px;
+    box-sizing: border-box; /* Asegura que el padding no sume tamaño extra */
 }
 
 .balance-diario {
@@ -66,13 +69,21 @@ header {
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
+/* ¡AQUÍ ESTABA EL DETALLE PRINCIPAL! */
 .balances-individuales {
     display: flex;
     gap: 15px;
     margin-bottom: 20px;
+    flex-wrap: wrap; /* AGREGA ESTO: Permite que las tarjetas bajen si no entran juntas */
 }
 
-.card { flex: 1; text-align: center; border-left: 5px solid #ccc; }
+/* MODIFICADO: Ajustado para que en móvil ocupen el 100% si bajan de línea */
+.card { 
+    flex: 1 1 200px; /* AGREGA ESTO: Crece equitativamente pero mantiene una base mínima de 200px */
+    text-align: center; 
+    border-left: 5px solid #ccc; 
+    box-sizing: border-box;
+}
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
 .card h3 { margin: 0; font-size: 0.9rem; color: #7f8c8d; }
@@ -108,9 +119,12 @@ header {
 }
 .btn-tab.activo { background-color: var(--accent-color); color: white; }
 
-.acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; }
+/* MODIFICADO: Se agregó flex-wrap para que los botones de acción no se aplasten en pantallas muy chicas */
+.acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
 .btn-accion {
     padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
+    flex: 1; /* Hace que los botones compartan el espacio equitativamente en móviles */
+    min-width: 120px;
 }
 .btn-excel { background-color: #27ae60; color: white; }
 .btn-cierre { background-color: #f39c12; color: white; }
@@ -119,6 +133,7 @@ header {
 .tabla-contenedor {
     max-height: 480px;
     overflow-y: auto;
+    overflow-x: auto; /* AGREGA ESTO: Si la tabla es muy ancha por los datos, permite hacer scroll horizontal SOLO dentro de la tabla sin romper la pantalla */
     border: 1px solid #e2e8f0;
     border-radius: 8px;
 }
