@@ -7,11 +7,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>🏡 Control de Presupuesto</h1>
-        <h2>Hogar Saltor Martínez</h2>
+    <!-- CONTENEDOR GLOBAL: Controla el ancho máximo y el centrado en cualquier pantalla -->
+    <div class="dashboard-container">
         
-        <!-- Bloque de Balances Principales -->
+        <header>
+            <h1>🏡 Control de Presupuesto</h1>
+            <h2>Hogar Saltor Martínez</h2>
+        </header>
+
+        <!-- Bloque de Balances Principales (Fuera del header para un centrado y responsive impecable) -->
         <div class="contenedor-balances-top">
             <div class="balance-global">
                 <h3>Fondo Total Acumulado</h3>
@@ -22,99 +26,100 @@
                 <p id="total-diario">$0.00</p>
             </div>
         </div>
-    </header>
 
-    <main class="dashboard-grid">
-        <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
-        <div class="columna-izquierda">
-            <section class="balances-individuales">
-                <div class="card usuario-a">
-                    <h3>Mes Actual: Diego</h3>
-                    <p id="total-usuario-a">$0.00</p>
-                </div>
-                <div class="card usuario-b">
-                    <h3>Mes Actual: Romina</h3>
-                    <p id="total-usuario-b">$0.00</p>
-                </div>
-            </section>
+        <main class="dashboard-grid">
+            <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
+            <div class="columna-izquierda">
+                <section class="balances-individuales">
+                    <div class="card usuario-a">
+                        <h3>Mes Actual: Diego</h3>
+                        <p id="total-usuario-a">$0.00</p>
+                    </div>
+                    <div class="card usuario-b">
+                        <h3>Mes Actual: Romina</h3>
+                        <p id="total-usuario-b">$0.00</p>
+                    </div>
+                </section>
 
-            <section class="formulario-movimiento">
-                <h3>📝 Registrar Nuevo Movimiento</h3>
-                <form id="form-transaccion">
-                    <div class="form-group">
-                        <label for="tipo">Tipo de Operación:</label>
-                        <select id="tipo" required>
-                            <option value="ingreso">Ingreso (Entrada de Dinero)</option>
-                            <option value="gasto">Gasto (Salida / Malgasto)</option>
-                        </select>
+                <section class="formulario-movimiento">
+                    <h3>📝 Registrar Nuevo Movimiento</h3>
+                    <form id="form-transaccion">
+                        <div class="form-group">
+                            <label for="tipo">Tipo de Operación:</label>
+                            <select id="tipo" required>
+                                <option value="ingreso">Ingreso (Entrada de Dinero)</option>
+                                <option value="gasto">Gasto (Salida / Malgasto)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario">¿Quién realiza el movimiento?:</label>
+                            <select id="usuario" required>
+                                <option value="Diego">Diego</option>
+                                <option value="Romina">Romina</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="monto">Monto ($):</label>
+                            <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Detalle, Origen o Concepto:</label>
+                            <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
+                        </div>
+
+                        <button type="submit" class="btn-guardar">Guardar Movimiento</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- COLUMNA DERECHA: Card del Historial Autocontenido con Pestañas -->
+            <div class="columna-derecha">
+                <section class="card-historial">
+                    <div class="historial-cabecera">
+                        <h3>📜 Panel de Registros</h3>
+                        <div class="pestanas-filtros">
+                            <button class="btn-tab activo" id="tab-hoy" onclick="cambiarFiltro('hoy')">Hoy</button>
+                            <button class="btn-tab" id="tab-mes" onclick="cambiarFiltro('mes')">Mes En Curso</button>
+                            <button class="btn-tab" id="tab-archivo" onclick="cambiarFiltro('archivo')">Archivo Histórico</button>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="usuario">¿Quién realiza el movimiento?:</label>
-                        <select id="usuario" required>
-                            <option value="Diego">Diego</option>
-                            <option value="Romina">Romina</option>
-                        </select>
+                    <!-- Selector de meses archivados (solo visible en modo archivo) -->
+                    <div id="contenedor-selector-archivo" class="selector-archivo-oculto">
+                        <label for="selector-meses">Seleccionar Mes Pasado:</label>
+                        <select id="selector-meses" onchange="cargarMesArchivado()"></select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="monto">Monto ($):</label>
-                        <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+                    <!-- Botones de Acción según la vista activa -->
+                    <div class="acciones-historial">
+                        <button id="btn-exportar" class="btn-accion btn-excel" onclick="exportarExcel()">📥 Descargar Excel</button>
+                        <button id="btn-cerrar-mes" class="btn-accion btn-cierre" onclick="ejecutarCierreMensual()">🔒 Archivar y Cerrar Mes</button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="descripcion">Detalle, Origen o Concepto:</label>
-                        <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
+                    <!-- Tabla con contenedor scrollable interno -->
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Miembro</th>
+                                    <th>Detalle</th>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-transacciones"></tbody>
+                        </table>
                     </div>
+                </section>
+            </div>
+        </main>
 
-                    <button type="submit" class="btn-guardar">Guardar Movimiento</button>
-                </form>
-            </section>
-        </div>
-
-        <!-- COLUMNA DERECHA: Card del Historial Autocontenido con Pestañas -->
-        <div class="columna-derecha">
-            <section class="card-historial">
-                <div class="historial-cabecera">
-                    <h3>📜 Panel de Registros</h3>
-                    <div class="pestanas-filtros">
-                        <button class="btn-tab activo" id="tab-hoy" onclick="cambiarFiltro('hoy')">Hoy</button>
-                        <button class="btn-tab" id="tab-mes" onclick="cambiarFiltro('mes')">Mes En Curso</button>
-                        <button class="btn-tab" id="tab-archivo" onclick="cambiarFiltro('archivo')">Archivo Histórico</button>
-                    </div>
-                </div>
-
-                <!-- Selector de meses archivados (solo visible en modo archivo) -->
-                <div id="contenedor-selector-archivo" class="selector-archivo-oculto">
-                    <label for="selector-meses">Seleccionar Mes Pasado:</label>
-                    <select id="selector-meses" onchange="cargarMesArchivado()"></select>
-                </div>
-
-                <!-- Botones de Acción según la vista activa -->
-                <div class="acciones-historial">
-                    <button id="btn-exportar" class="btn-accion btn-excel" onclick="exportarExcel()">📥 Descargar Excel</button>
-                    <button id="btn-cerrar-mes" class="btn-accion btn-cierre" onclick="ejecutarCierreMensual()">🔒 Archivar y Cerrar Mes</button>
-                </div>
-
-                <!-- Tabla con contenedor scrollable interno -->
-                <div class="tabla-contenedor">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Miembro</th>
-                                <th>Detalle</th>
-                                <th>Tipo</th>
-                                <th>Monto</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-transacciones"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-    </main>
+    </div> <!-- Fin .dashboard-container -->
 
     <script src="app.js"></script>
 </body>
