@@ -1,0 +1,13 @@
+No te preocupes por el riesgo, esto era justo lo que necesitábamos ver para destrabar el misterio. Tu contraseña (xMKIqDVHkDRiNn3Z) está perfecta, es de solo letras y números, por lo que no genera conflictos.
+Sin embargo, al mirar con lupa tu enlace largo (el SRV), encontré el error exacto por el cual no se graba nada. El enlace que pusiste en Vercel está incompleto:
+Tu enlace termina así: ...mongodb.net/
+Pero para que MongoDB y Vercel sepan en qué carpeta meter la información, el enlace debe llevar obligatoriamente el nombre de la base de datos al final.
+Si lo dejas vacío, Vercel intenta conectarse a una carpeta en blanco que no existe en tu nube, la conexión se queda colgada en el aire y por eso tu formulario en el celular o la Netbook no hace nada.
+
+🛠️ La Solución Definitiva (Agregar el nombre de la base de datos)
+
+El enlace correcto que debes poner en Vercel tiene que terminar con PresupuestoHogar justo después de la barra /.
+Tu enlace real y corregido debe ser exactamente este:
+text
+mongodb+srv://diegosaltor_db_user:xMKIqDVHkDRiNn3Z@cluster0.tzgsmwt.mongodb.net/PresupuestoHogar
+
