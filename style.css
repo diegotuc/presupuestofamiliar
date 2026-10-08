@@ -9,7 +9,7 @@
 }
 
 * {
-    box-sizing: border-box; /* Evita que los elementos se desborden por el padding */
+    box-sizing: border-box;
 }
 
 body {
@@ -17,12 +17,12 @@ body {
     background-color: var(--bg-main);
     color: var(--primary-color);
     margin: 0;
-    padding: 10px; /* Espacio mínimo para que no pegue a los bordes del celu */
+    padding: 12px;
 }
 
 .dashboard-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1350px; /* Un poco más amplio para que la tabla respire excelente en PC */
     margin: 0 auto;
 }
 
@@ -31,185 +31,299 @@ header {
     flex-direction: column;
     align-items: center; 
     text-align: center;
-    margin: 15px 0;
-    width: 100%;
-}
-
-header h1 { margin: 0 0 5px 0; font-size: 1.6rem; }
-header h2 { margin: 0; font-size: 1.2rem; font-weight: 500; color: #566573; }
-
-/* --- Balances superiores (Fondo Total y Balance de Hoy) --- */
-.contenedor-balances-top {
-    display: flex;
-    flex-direction: column; /* En celular van uno abajo del otro obligatoriamente */
-    gap: 12px;
     margin-bottom: 20px;
     width: 100%;
 }
 
+header h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
+header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
+
+.contenedor-balances-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;    
+    gap: 20px;
+    margin-top: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    width: 100%;            
+}
+
 .balance-global, .balance-diario {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    padding: 15px;
+    padding: 15px 30px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    flex: 1 1 280px;       
+    max-width: 360px;      
+    box-sizing: border-box;
     text-align: center;
-    width: 100%;
 }
-.balance-global { background: linear-gradient(135deg, #2c3e50, #34495e); }
-.balance-diario { background: linear-gradient(135deg, #16a085, #2ce6a4); }
 
-.balance-global h3, .balance-diario h3 { margin: 0; font-size: 0.85rem; opacity: 0.9; }
-.balance-global p, .balance-diario p { margin: 5px 0 0 0; font-size: 1.5rem; font-weight: bold; }
+.balance-diario {
+    background: linear-gradient(135deg, #16a085, #2ce6a4);
+}
 
+.balance-global h3, .balance-diario h3 { margin: 0; font-size: 0.9rem; opacity: 0.9; }
+.balance-global p, .balance-diario p { margin: 5px 0 0 0; font-size: 1.7rem; font-weight: bold; }
 
-/* --- DISEÑO PARA CELULAR POR DEFECTO (Columnas apiladas) --- */
+/* ==========================================
+   ESTRUCTURA DE GRID (PC - 2 COLUMNAS)
+   ========================================== */
 .dashboard-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    /* Columna izquierda robusta de 380px para dar presencia al formulario y tarjetas */
+    grid-template-columns: 380px 1fr;
+    gap: 25px;
     width: 100%;
+    align-items: start;
 }
 
-.columna-izquierda, .columna-derecha {
-    width: 100%;
+/* Tarjetas e Inputs generales */
+.card-historial, .formulario-movimiento, .card-resumen-hoy {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-/* Tarjetas individuales de Diego y Romina en Celular */
 .balances-individuales {
     display: flex;
-    flex-direction: column; /* En celular van uno abajo del otro para que no se corten */
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: nowrap; /* En PC se mantienen firmes lado a lado */
     width: 100%;
 }
 
 .card { 
     background-color: var(--card-bg);
     border-radius: 12px;
-    padding: 12px;
+    padding: 15px 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    flex: 1 1 50%; /* Mitad de espacio para Diego y Romina */
     text-align: center; 
     border-left: 5px solid #ccc; 
-    width: 100%;
+    box-sizing: border-box;
 }
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
 .card h3 { margin: 0; font-size: 0.85rem; color: #7f8c8d; }
-.card p { margin: 5px 0 0 0; font-size: 1.3rem; font-weight: bold; }
+.card p { margin: 6px 0 0 0; font-size: 1.4rem; font-weight: bold; }
 
-/* Formulario */
-.formulario-movimiento, .card-historial {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    width: 100%;
-}
-.formulario-movimiento h3 { margin-top: 0; font-size: 1.1rem; }
-
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 0.85rem; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 5px; font-size: 0.9rem; }
 .form-group select, .form-group input {
-    width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; font-size: 0.95rem; background-color: #fff;
+    width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem;
+}
+
+.botones-formulario {
+    display: flex;
+    gap: 10px;
 }
 
 .btn-guardar {
-    width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; margin-top: 5px;
+    width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s;
 }
+.btn-guardar:hover { background-color: #1a252f; }
 
-/* Panel de registros e Historial */
-.historial-cabecera {
+.btn-cancelar {
+    width: 100%;
+    padding: 12px;
+    background-color: #e2e8f0;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-cancelar:hover { background-color: #cbd5e1; }
+
+/* Panel de Registros e Historial */
+.historial-cabecera, .resumen-hoy-cabecera {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 2px solid #f4f7f6;
-    padding-bottom: 12px;
-    margin-bottom: 12px;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
-.historial-cabecera h3 { margin: 0; font-size: 1.1rem; }
+.historial-cabecera h3, .resumen-hoy-cabecera h3 { margin: 0; }
 
-.pestanas-filtros { display: flex; gap: 4px; width: 100%; }
+.historial-titulo-bloque {
+    display: flex;
+    align-items: center;
+}
+
+.pestanas-filtros { display: flex; gap: 5px; }
 .btn-tab {
-    flex: 1; text-align: center; padding: 8px 4px; border: none; background-color: #e2e8f0; border-radius: 6px; font-weight: 500; font-size: 0.75rem; cursor: pointer;
+    padding: 8px 14px; border: none; background-color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s;
 }
 .btn-tab.activo { background-color: var(--accent-color); color: white; }
 
-.acciones-historial { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
 .btn-accion {
-    width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-align: center; cursor: pointer;
+    padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
+    flex: 1; 
+    min-width: 120px;
 }
 .btn-excel { background-color: #27ae60; color: white; }
+.btn-excel:hover { background-color: #219653; }
 .btn-cierre { background-color: #f39c12; color: white; }
+.btn-cierre:hover { background-color: #d68910; }
 
-/* Contenedor de la Tabla con scroll horizontal interno obligatorio */
+.btn-navegacion {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-navegacion:hover { background-color: #2980b9; }
+
+.btn-volver {
+    background-color: #7f8c8d;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 15px;
+}
+.btn-volver:hover { background-color: #95a5a6; }
+
+/* Buscador Avanzado y Filtros por Medio de Pago */
+.barra-busqueda-filtros {
+    display: flex;
+    gap: 15px;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    border: 1px solid #e2e8f0;
+}
+
+.filtro-item {
+    flex: 1 1 200px;
+}
+.filtro-item label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+.filtro-item input, .filtro-item select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+/* ==========================================
+   TABLA CON AJUSTE DE TEXTO AUTOMÁTICO (ESTILO EXCEL)
+   ========================================== */
 .tabla-contenedor {
-    max-height: 400px;
+    max-height: 520px;
     overflow-y: auto;
     overflow-x: auto; 
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     width: 100%;
-    -webkit-overflow-scrolling: touch;
 }
 
-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; }
-th, td { padding: 10px; border-bottom: 1px solid #edf2f7; white-space: nowrap; }
+.contenedor-tabla-historial {
+    max-height: 600px;
+}
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+    font-size: 0.9rem;
+    table-layout: fixed; /* Mantiene las columnas firmes según los anchos definidos */
+}
+
+thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #e2e8f0; }
+th, td { 
+    padding: 12px 10px; 
+    border-bottom: 1px solid #edf2f7; 
+    vertical-align: middle; 
+}
+
+/* --- Control Exacto de Columnas para evitar Scroll Horizontal --- */
+/* Tabla Corta (Resumen de Hoy) */
+#lista-hoy td, #vista-dashboard table th {
+    white-space: nowrap;
+}
+#lista-hoy td:nth-child(2), #vista-dashboard table th:nth-child(2) { 
+    white-space: normal;       /* Ajuste automático estilo Excel */
+    word-break: break-word;    
+    overflow-wrap: break-word;
+}
+
+/* Tabla Larga (Historial Completo) */
+#lista-transacciones td, #vista-historial table th {
+    white-space: nowrap;
+}
+#lista-transacciones td:nth-child(3), #vista-historial table th:nth-child(3) { 
+    white-space: normal;       /* Ajuste automático estilo Excel */
+    word-break: break-word;    
+    overflow-wrap: break-word;
+}
+
+/* Seteo de Anchos Fijos Proporcionales para PC */
+#vista-dashboard table th:nth-child(1) { width: 85px; }  /* Miembro */
+#vista-dashboard table th:nth-child(2) { width: auto; }  /* Detalle (Elástico) */
+#vista-dashboard table th:nth-child(3) { width: 140px; } /* Medio/Ubicación */
+#vista-dashboard table th:nth-child(4) { width: 105px; } /* Monto */
+#vista-dashboard table th:nth-child(5) { width: 85px; }  /* Acciones */
+
+#vista-historial table th:nth-child(1) { width: 95px; }  /* Fecha */
+#vista-historial table th:nth-child(2) { width: 85px; }  /* Miembro */
+#vista-historial table th:nth-child(3) { width: auto; }  /* Detalle (Elástico) */
+#vista-historial table th:nth-child(4) { width: 140px; } /* Medio/Ubicación */
+#vista-historial table th:nth-child(5) { width: 85px; }  /* Tipo */
+#vista-historial table th:nth-child(6) { width: 105px; } /* Monto */
+#vista-historial table th:nth-child(7) { width: 85px; }  /* Acciones */
 
 .txt-ingreso { color: var(--ingreso-color); font-weight: bold; }
 .txt-gasto { color: var(--gasto-color); font-weight: bold; }
 .btn-borrar { background: none; border: none; cursor: pointer; font-size: 1rem; }
+.btn-editar { background: none; border: none; cursor: pointer; font-size: 1rem; margin-right: 5px; }
 
-.selector-archivo-oculto { display: none; }
-.selector-archivo-visible { display: block; margin-bottom: 12px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
+.selector-archivo-oculto { display: none; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
+.selector-archivo-visible { display: block; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 
+.columna-completa {
+    grid-column: 1 / -1;
+    width: 100%;
+}
 
-/* --- VISTA PARA PC / PANTALLAS GRANDES (A partir de 850px) --- */
-@media (min-width: 850px) {
-    body { padding: 20px; }
-    
-    header h1 { font-size: 2.2rem; }
-    header h2 { font-size: 1.4rem; }
-
-    /* Los balances top se ponen uno al lado del otro en PC */
-    .contenedor-balances-top {
-        flex-direction: row;
-        justify-content: center;
-        gap: 20px;
-    }
-    .balance-global, .balance-diario {
-        width: 320px;
+/* ==========================================
+   MEDIA QUERIES (Alineación elástica en celulares)
+   ========================================== */
+@media (max-width: 900px) {
+    .dashboard-grid { 
+        grid-template-columns: 1fr; /* Colapsa a 1 columna vertical en móvil */
     }
     
-    /* El diseño pasa a ser una grilla de dos columnas perfectamente distribuida */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: 360px 1fr;
-        gap: 25px;
-        align-items: start;
-    }
-
-    /* Las tarjetas de Diego y Romina se ponen una al lado de la otra en PC */
     .balances-individuales {
-        flex-direction: row;
-        gap: 15px;
+        flex-wrap: wrap; /* Tarjetas de Diego y Romina van una abajo de la otra en celular */
     }
-    .card { flex: 1; }
-
-    /* El encabezado del historial se vuelve horizontal */
-    .historial-cabecera {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .pestanas-filtros { width: auto; }
-    .btn-tab { padding: 8px 15px; font-size: 0.85rem; }
-
-    /* Los botones de acción se alinean uno al lado del otro */
-    .acciones-historial {
-        flex-direction: row;
-    }
-    .btn-accion { width: auto; padding: 10px 20px; }
     
-    .formulario-movimiento, .card-historial { padding: 20px; }
+    .card {
+        flex: 1 1 140px;
+    }
+
+    /* En celulares permitimos que la tabla fluya de forma nativa para evitar que las celdas queden super altas */
+    table { table-layout: auto; }
+    table th, table td { width: auto !important; white-space: nowrap !important; }
 }

@@ -1,0 +1,704 @@
+index.html
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Presupuesto del Hogar Saltor Martínez</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- CONTENEDOR GLOBAL: Controla el ancho máximo y el centrado en cualquier pantalla -->
+    <div class="dashboard-container">
+        
+        <header>
+            <h1>🏡 Control de Presupuesto</h1>
+            <h2>Hogar Saltor Martínez</h2>
+        </header>
+
+        <!-- Bloque de Balances Principales (Fuera del header para un centrado y responsive impecable) -->
+        <div class="contenedor-balances-top">
+            <div class="balance-global">
+                <h3>Fondo Total Acumulado</h3>
+                <p id="total-global">$0.00</p>
+            </div>
+            <div class="balance-diario">
+                <h3>Balance Neto de Hoy</h3>
+                <p id="total-diario">$0.00</p>
+            </div>
+        </div>
+
+        <main class="dashboard-grid">
+            <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
+            <div class="columna-izquierda">
+                <section class="balances-individuales">
+                    <div class="card usuario-a">
+                        <h3>Mes Actual: Diego</h3>
+                        <p id="total-usuario-a">$0.00</p>
+                    </div>
+                    <div class="card usuario-b">
+                        <h3>Mes Actual: Romina</h3>
+                        <p id="total-usuario-b">$0.00</p>
+                    </div>
+                </section>
+
+                <section class="formulario-movimiento">
+                    <h3>📝 Registrar Nuevo Movimiento</h3>
+                    <form id="form-transaccion">
+                        <div class="form-group">
+                            <label for="tipo">Tipo de Operación:</label>
+                            <select id="tipo" required>
+                                <option value="ingreso">Ingreso (Entrada de Dinero)</option>
+                                <option value="gasto">Gasto (Salida / Malgasto)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario">¿Quién realiza el movimiento?:</label>
+                            <select id="usuario" required>
+                                <option value="Diego">Diego</option>
+                                <option value="Romina">Romina</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="monto">Monto ($):</label>
+                            <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Detalle, Origen o Concepto:</label>
+                            <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
+                        </div>
+
+                        <button type="submit" class="btn-guardar">Guardar Movimiento</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- COLUMNA DERECHA: Card del Historial Autocontenido con Pestañas -->
+            <div class="columna-derecha">
+                <section class="card-historial">
+                    <div class="historial-cabecera">
+                        <h3>📜 Panel de Registros</h3>
+                        <div class="pestanas-filtros">
+                            <button class="btn-tab activo" id="tab-hoy" onclick="cambiarFiltro('hoy')">Hoy</button>
+                            <button class="btn-tab" id="tab-mes" onclick="cambiarFiltro('mes')">Mes En Curso</button>
+                            <button class="btn-tab" id="tab-archivo" onclick="cambiarFiltro('archivo')">Archivo Histórico</button>
+                        </div>
+                    </div>
+
+                    <!-- Selector de meses archivados (solo visible en modo archivo) -->
+                    <div id="contenedor-selector-archivo" class="selector-archivo-oculto">
+                        <label for="selector-meses">Seleccionar Mes Pasado:</label>
+                        <select id="selector-meses" onchange="cargarMesArchivado()"></select>
+                    </div>
+
+                    <!-- Botones de Acción según la vista activa -->
+                    <div class="acciones-historial">
+                        <button id="btn-exportar" class="btn-accion btn-excel" onclick="exportarExcel()">📥 Descargar Excel</button>
+                        <button id="btn-cerrar-mes" class="btn-accion btn-cierre" onclick="ejecutarCierreMensual()">🔒 Archivar y Cerrar Mes</button>
+                    </div>
+
+                    <!-- Tabla con contenedor scrollable interno -->
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Miembro</th>
+                                    <th>Detalle</th>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-transacciones"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+    </div> <!-- Fin .dashboard-container -->
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+
+style.css
+
+/* --- Estilos Base y Layout Organizado --- */
+:root {
+    --bg-main: #f4f7f6;
+    --card-bg: #ffffff;
+    --primary-color: #2c3e50;
+    --ingreso-color: #2ecc71;
+    --gasto-color: #e74c3c;
+    --accent-color: #3498db;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--primary-color);
+    margin: 0;
+    padding: 12px;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 1350px; /* Un poco más amplio para que la tabla respire excelente en PC */
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+header h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
+header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
+
+.contenedor-balances-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;    
+    gap: 20px;
+    margin-top: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    width: 100%;            
+}
+
+.balance-global, .balance-diario {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    flex: 1 1 280px;       
+    max-width: 360px;      
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.balance-diario {
+    background: linear-gradient(135deg, #16a085, #2ce6a4);
+}
+
+.balance-global h3, .balance-diario h3 { margin: 0; font-size: 0.9rem; opacity: 0.9; }
+.balance-global p, .balance-diario p { margin: 5px 0 0 0; font-size: 1.7rem; font-weight: bold; }
+
+/* ==========================================
+   ESTRUCTURA DE GRID (PC - 2 COLUMNAS)
+   ========================================== */
+.dashboard-grid {
+    display: grid;
+    /* Columna izquierda robusta de 380px para dar presencia al formulario y tarjetas */
+    grid-template-columns: 380px 1fr;
+    gap: 25px;
+    width: 100%;
+    align-items: start;
+}
+
+/* Tarjetas e Inputs generales */
+.card-historial, .formulario-movimiento {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.balances-individuales {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: nowrap; /* En PC se mantienen firmes lado a lado */
+    width: 100%;
+}
+
+.card { 
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    flex: 1 1 50%; /* Mitad de espacio para Diego y Romina */
+    text-align: center; 
+    border-left: 5px solid #ccc; 
+    box-sizing: border-box;
+}
+.card.usuario-a { border-left-color: #3498db; }
+.card.usuario-b { border-left-color: #9b59b6; }
+.card h3 { margin: 0; font-size: 0.85rem; color: #7f8c8d; }
+.card p { margin: 6px 0 0 0; font-size: 1.4rem; font-weight: bold; }
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 5px; font-size: 0.9rem; }
+.form-group select, .form-group input {
+    width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem;
+}
+
+.btn-guardar {
+    width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s;
+}
+.btn-guardar:hover { background-color: #1a252f; }
+
+/* Panel de Registros */
+.historial-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f4f7f6;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.historial-cabecera h3 { margin: 0; }
+
+.pestanas-filtros { display: flex; gap: 5px; }
+.btn-tab {
+    padding: 8px 14px; border: none; background-color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s;
+}
+.btn-tab.activo { background-color: var(--accent-color); color: white; }
+
+.acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+.btn-accion {
+    padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
+    flex: 1; 
+    min-width: 120px;
+}
+.btn-excel { background-color: #27ae60; color: white; }
+.btn-cierre { background-color: #f39c12; color: white; }
+
+/* ==========================================
+   TABLA CON AJUSTE DE TEXTO AUTOMÁTICO (ESTILO EXCEL)
+   ========================================== */
+.tabla-contenedor {
+    max-height: 520px;
+    overflow-y: auto;
+    overflow-x: auto; 
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 100%;
+}
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+    font-size: 0.9rem;
+    table-layout: fixed; /* Mantiene las columnas firmes según los anchos fijos de abajo */
+}
+
+thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #e2e8f0; }
+th, td { 
+    padding: 12px 10px; 
+    border-bottom: 1px solid #edf2f7; 
+    vertical-align: middle; /* Alineación vertical prolija */
+}
+
+/* Definición de anchos fijos para mantener estructura controlada en PC */
+table th:nth-child(1), table td:nth-child(1) { width: 95px; white-space: nowrap; }  /* Fecha */
+table th:nth-child(2), table td:nth-child(2) { width: 85px; white-space: nowrap; }  /* Miembro */
+table th:nth-child(4), table td:nth-child(4) { width: 85px; white-space: nowrap; }  /* Tipo */
+table th:nth-child(5), table td:nth-child(5) { width: 105px; white-space: nowrap; } /* Monto */
+table th:nth-child(6), table td:nth-child(6) { width: 65px; text-align: center; }   /* Acción */
+
+/* EFECTO EXCEL: La columna Detalle se estira hacia abajo si el texto es muy largo */
+table th:nth-child(3), table td:nth-child(3) { 
+    width: auto; 
+    white-space: normal;       /* ¡AQUÍ ESTÁ EL TRUCO!: Permite saltos de línea */
+    word-break: break-word;    /* Corta palabras extremadamente largas si es necesario */
+    overflow-wrap: break-word;
+}
+
+.txt-ingreso { color: var(--ingreso-color); font-weight: bold; }
+.txt-gasto { color: var(--gasto-color); font-weight: bold; }
+.btn-borrar { background: none; border: none; cursor: pointer; font-size: 1rem; }
+
+.selector-archivo-oculto { display: none; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
+.selector-archivo-visible { display: block; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
+
+
+/* ==========================================
+   MEDIA QUERIES (Alineación elástica en celulares)
+   ========================================== */
+@media (max-width: 900px) {
+    .dashboard-grid { 
+        grid-template-columns: 1fr; /* Colapsa a 1 columna vertical en móvil */
+    }
+    
+    .balances-individuales {
+        flex-wrap: wrap; /* Tarjetas de Diego y Romina van una abajo de la otra en celular */
+    }
+    
+    .card {
+        flex: 1 1 140px;
+    }
+
+    /* En celulares permitimos que la tabla fluya de forma nativa para evitar que las celdas queden super altas */
+    table { table-layout: auto; }
+    table th:nth-child(3), table td:nth-child(3) { white-space: nowrap; }
+}
+
+
+
+app.js
+
+// Variable de Estado del Filtro Activo: 'hoy', 'mes', o 'archivo'
+let filtroActivo = 'hoy';
+let mesSeleccionadoArchivo = '';
+
+document.addEventListener("DOMContentLoaded", () => {
+    inicializarArchivo();
+    cargarMovimientos();
+});
+
+const formTransaccion = document.getElementById("form-transaccion");
+
+// 1. REGISTRAR MOVIMIENTO (POST)
+if (formTransaccion) {
+    formTransaccion.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const hoy = new Date();
+        const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
+        const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
+
+        const movimiento = {
+            id: Date.now(),
+            fecha: fechaFormateada,
+            llaveMes: llaveMesActual,
+            tipo: document.getElementById("tipo").value,
+            usuario: document.getElementById("usuario").value, 
+            monto: parseFloat(document.getElementById("monto").value),
+            descripcion: document.getElementById("descripcion").value
+        };
+
+        try {
+            // USAR RUTA RELATIVA LIMPIA
+            const res = await fetch('/api/server', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(movimiento)
+            });
+
+            if (res.ok) {
+                formTransaccion.reset();
+                cargarMovimientos();
+            } else {
+                alert("Error en el servidor al guardar.");
+            }
+        } catch (error) {
+            console.error("Error al registrar movimiento:", error);
+        }
+    });
+}
+
+// 2. CARGAR MOVIMIENTOS (GET)
+async function cargarMovimientos() {
+    try {
+        // USAR RUTA RELATIVA LIMPIA
+        const res = await fetch('/api/server');
+        const datos = await res.json();
+        const movimientosMesActual = datos.movimientos || [];
+        
+        actualizarTodosLosBalances(movimientosMesActual);
+        procesarYRenderizarTabla(movimientosMesActual);
+    } catch (error) {
+        console.error("Error al cargar los movimientos:", error);
+    }
+}
+
+// 3. ELIMINAR MOVIMIENTO (DELETE)
+async function eliminarMovimiento(id) {
+    if (!confirm("¿Estás seguro de que deseas eliminar este movimiento?")) return;
+    
+    try {
+        // USAR RUTA RELATIVA LIMPIA
+        const res = await fetch(`/api/server?id=${id}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            cargarMovimientos();
+        } else {
+            alert("No se pudo eliminar el movimiento.");
+        }
+    } catch (error) {
+        console.error("Error al eliminar movimiento:", error);
+    }
+}
+
+function actualizarTodosLosBalances(movimientosMesActual) {
+    const hoyStr = obtenerFechaHoyString();
+    let acumuladoGlobal = 0;
+    
+    const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
+    Object.values(archivoHistorico).forEach(listaMes => {
+        listaMes.forEach(mov => {
+            acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        });
+    });
+
+    movimientosMesActual.forEach(mov => {
+        acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+    });
+
+    let acumuladoDiario = 0;
+    movimientosMesActual.filter(mov => mov.fecha === hoyStr).forEach(mov => {
+        acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+    });
+
+    let acumuladoDiego = 0;
+    let acumuladoRomina = 0;
+    movimientosMesActual.forEach(mov => {
+        if (mov.usuario === 'Diego') acumuladoDiego += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+    });
+
+    if(document.getElementById("total-global")) document.getElementById("total-global").innerText = formatMoneda(acumuladoGlobal);
+    if(document.getElementById("total-diario")) document.getElementById("total-diario").innerText = formatMoneda(acumuladoDiario);
+    if(document.getElementById("total-usuario-a")) document.getElementById("total-usuario-a").innerText = formatMoneda(acumuladoDiego);
+    if(document.getElementById("total-usuario-b")) document.getElementById("total-usuario-b").innerText = formatMoneda(acumuladoRomina);
+}
+
+function procesarYRenderizarTabla(movimientosMesActual) {
+    let movimientosAMostrar = [];
+    const btnCerrarMes = document.getElementById("btn-cerrar-mes");
+    const divSelectorArchivo = document.getElementById("contenedor-selector-archivo");
+
+    if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-oculto";
+    if (btnCerrarMes) btnCerrarMes.style.display = "none";
+
+    if (filtroActivo === 'hoy') {
+        const hoyStr = obtenerFechaHoyString();
+        movimientosAMostrar = movimientosMesActual.filter(mov => mov.fecha === hoyStr);
+    } 
+    else if (filtroActivo === 'mes') {
+        movimientosAMostrar = movimientosMesActual;
+        if (btnCerrarMes) btnCerrarMes.style.display = "block";
+    } 
+    else if (filtroActivo === 'archivo') {
+        if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-visible";
+        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
+        movimientosAMostrar = archivoHistorico[mesSeleccionadoArchivo] || [];
+    }
+
+    renderizarFilasTabla(movimientosAMostrar);
+}
+
+function renderizarFilasTabla(movimientos) {
+    const listaContenedor = document.getElementById("lista-transacciones");
+    if (!listaContenedor) return;
+    
+    listaContenedor.innerHTML = ""; 
+
+    if (movimientos.length === 0) {
+        listaContenedor.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#7f8c8d;">No hay movimientos registrados para este período.</td></tr>`;
+        return;
+    }
+
+    movimientos.forEach(mov => {
+        const tr = document.createElement("tr");
+        const celdaAccion = (filtroActivo === 'archivo') 
+            ? `<td>🔒 Archivo</td>` 
+            : `<td><button class="btn-borrar" onclick="eliminarMovimiento(${mov.id})">❌</button></td>`;
+
+        tr.innerHTML = `
+            <td>${mov.fecha}</td>
+            <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
+            <td>${mov.descripcion}</td>
+            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">${mov.tipo.toUpperCase()}</td>
+            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">
+                ${mov.tipo === 'ingreso' ? '+' : '-'}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </td>
+            ${celdaAccion}
+        `;
+        listaContenedor.appendChild(tr);
+    });
+}
+
+// Cambiar de Pestaña de Filtros
+function cambiarFiltro(nuevoFiltro) {
+    filtroActivo = nuevoFiltro;
+    document.querySelectorAll(".btn-tab").forEach(btn => btn.classList.remove("activo"));
+    const tabBtn = document.getElementById(`tab-${nuevoFiltro}`);
+    if (tabBtn) tabBtn.classList.add("activo");
+    cargarMovimientos();
+}
+
+// Cierre Mensual
+function ejecutarCierreMensual() {
+    const datosGuardados = localStorage.getItem('mis_movimientos');
+    const movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
+
+    if (movimientos.length === 0) {
+        alert("No hay movimientos en el mes actual para cerrar.");
+        return;
+    }
+
+    const fechaRef = movimientos[0].llaveMes || obtenerLlaveMesActualString();
+    
+    if (confirm(`¿Estás seguro de cerrar el período de este mes (${fechaRef})?\nSe archivará de manera definitiva.`)) {
+        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
+        archivoHistorico[fechaRef] = movimientos;
+        localStorage.setItem('archivo_historico', JSON.stringify(archivoHistorico));
+        localStorage.setItem('mis_movimientos', JSON.stringify([]));
+        alert(`Período ${fechaRef} cerrado con éxito.`);
+        cambiarFiltro('hoy');
+    }
+}
+
+function inicializarArchivo() {
+    if (!localStorage.getItem('archivo_historico')) {
+        localStorage.setItem('archivo_historico', JSON.stringify({}));
+    }
+}
+
+function obtenerFechaHoyString() {
+    const hoy = new Date();
+    return `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
+}
+
+function formatMoneda(valor) {
+    if (typeof valor !== 'number') valor = parseFloat(valor) || 0;
+    return (valor >= 0 ? '' : '-') + '\$' + Math.abs(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+packaje.json
+
+{
+  "name": "control-presupuesto",
+  "version": "1.0.0",
+  "description": "Control de presupuesto familiar",
+  "main": "api/server.js",
+  "scripts": {
+    "start": "node api/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "mongoose": "^9.11.0"
+  }
+}
+
+
+/api/server.js
+
+const express = require('express');
+const cors = require('cors');
+const { MongoClient } = require('mongodb');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 10000;
+const uri = process.env.MONGODB_URI;
+
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
+
+const rootPath = path.join(__dirname, '../');
+app.use(express.static(rootPath));
+
+let client;
+let db;
+
+async function conectarDB() {
+    if (client && db) {
+        return db.collection('movimientos');
+    }
+    // CONEXIÓN MODERNA OBLIGATORIA: Sin parámetros obsoletos que causan el error 500
+    client = new MongoClient(uri);
+    await client.connect();
+    db = client.db('PresupuestoHogar');
+    return db.collection('movimientos');
+}
+
+// 1. OBTENER MOVIMIENTOS (GET)
+app.get('/api/server', async (req, res) => {
+    try {
+        const coleccion = await conectarDB();
+        const movimientos = await coleccion.find({}).sort({ id: -1 }).toArray();
+        return res.status(200).json({ movimientos });
+    } catch (error) {
+        console.error("Error en GET:", error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+// 2. GUARDAR MOVIMIENTO (POST)
+app.post('/api/server', async (req, res) => {
+    try {
+        const coleccion = await conectarDB();
+        const nuevoMovimiento = req.body;
+
+        if (!nuevoMovimiento.monto || !nuevoMovimiento.descripcion) {
+            return res.status(400).json({ error: 'Datos incompletos' });
+        }
+
+        await coleccion.insertOne(nuevoMovimiento);
+        return res.status(201).json({ mensaje: 'Movimiento guardado con éxito' });
+    } catch (error) {
+        console.error("Error en POST:", error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+// 3. ELIMINAR MOVIMIENTO (DELETE)
+app.delete('/api/server', async (req, res) => {
+    try {
+        const id = req.query.id;
+        if (!id) {
+            return res.status(400).json({ error: 'ID requerido' });
+        }
+
+        const coleccion = await conectarDB();
+        await coleccion.deleteOne({ id: parseInt(id) });
+        return res.status(200).json({ mensaje: 'Movimiento eliminado con éxito' });
+    } catch (error) {
+        console.error("Error en DELETE:", error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+// Enrutamiento estático universal
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
+    res.sendFile(path.join(rootPath, 'index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(`==> Servidor corriendo en el puerto ${PORT}`);
+});
+
+

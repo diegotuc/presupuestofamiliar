@@ -1,0 +1,14 @@
+.
+├── api
+│   └── server.js
+├── app.js
+├── codigo completo
+├── crear o modificar repositorio de github.txt
+├── index.html
+├── mongodb
+│   ├── como realcionar vercel con mongodb
+│   ├── url_de_ceneccion_de_base_de_dato
+│   └── usuario_y_password_de_base_de_dato
+├── package.json
+├── package-lock.json
+└── style.css

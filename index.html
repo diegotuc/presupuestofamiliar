@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- CONTENEDOR GLOBAL: Controla el ancho máximo y el centrado en cualquier pantalla -->
     <div class="dashboard-container">
         
         <header>
@@ -15,7 +14,7 @@
             <h2>Hogar Saltor Martínez</h2>
         </header>
 
-        <!-- Bloque de Balances Principales (Fuera del header para un centrado y responsive impecable) -->
+        <!-- Balances Principales -->
         <div class="contenedor-balances-top">
             <div class="balance-global">
                 <h3>Fondo Total Acumulado</h3>
@@ -27,8 +26,8 @@
             </div>
         </div>
 
-        <main class="dashboard-grid">
-            <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
+        <!-- VISTA PRINCIPAL: DASHBOARD -->
+        <main class="dashboard-grid" id="vista-dashboard">
             <div class="columna-izquierda">
                 <section class="balances-individuales">
                     <div class="card usuario-a">
@@ -42,11 +41,14 @@
                 </section>
 
                 <section class="formulario-movimiento">
-                    <h3>📝 Registrar Nuevo Movimiento</h3>
+                    <h3 id="form-titulo">📝 Registrar Nuevo Movimiento</h3>
                     <form id="form-transaccion">
+                        <!-- Campo oculto para cuando estemos editando -->
+                        <input type="hidden" id="edit-id">
+
                         <div class="form-group">
                             <label for="tipo">Tipo de Operación:</label>
-                            <select id="tipo" required>
+                            <select id="tipo" onchange="alternarCamposPago()" required>
                                 <option value="ingreso">Ingreso (Entrada de Dinero)</option>
                                 <option value="gasto">Gasto (Salida / Malgasto)</option>
                             </select>
@@ -61,6 +63,23 @@
                         </div>
 
                         <div class="form-group">
+                            <label id="label-medio-pago" for="medio-pago">Medio de Depósito:</label>
+                            <select id="medio-pago" onchange="alternarUbicacionEfectivo()" required>
+                                <option value="Mercado Pago">📱 Mercado Pago</option>
+                                <option value="Naranja X">🍊 Naranja X</option>
+                                <option value="Banco Galicia">🦁 Banco Galicia</option>
+                                <option value="Banco Santander">🔴 Banco Santander</option>
+                                <option value="Efectivo">💵 Efectivo</option>
+                            </select>
+                        </div>
+
+                        <!-- Campo Dinámico para Efectivo -->
+                        <div class="form-group" id="contenedor-ubicacion-efectivo" style="display: none;">
+                            <label for="ubicacion-efectivo">¿Dónde está el dinero físico?:</label>
+                            <input type="text" id="ubicacion-efectivo" placeholder="Ej: Billetera, mesita de luz, mesa">
+                        </div>
+
+                        <div class="form-group">
                             <label for="monto">Monto ($):</label>
                             <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
                         </div>
@@ -70,46 +89,98 @@
                             <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
                         </div>
 
-                        <button type="submit" class="btn-guardar">Guardar Movimiento</button>
+                        <div class="botones-formulario">
+                            <button type="submit" class="btn-guardar" id="btn-submit-form">Guardar Movimiento</button>
+                            <button type="button" class="btn-cancelar" id="btn-cancelar-edit" style="display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
+                        </div>
                     </form>
                 </section>
             </div>
 
-            <!-- COLUMNA DERECHA: Card del Historial Autocontenido con Pestañas -->
+            <!-- COLUMNA DERECHA: Resumen del Día y Acceso al Historial -->
             <div class="columna-derecha">
+                <section class="card-resumen-hoy">
+                    <div class="resumen-hoy-cabecera">
+                        <h3>📅 Movimientos de Hoy</h3>
+                        <button class="btn-navegacion" onclick="navegarA('historial')">🔍 Ver Historial Completo →</button>
+                    </div>
+                    
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Miembro</th>
+                                    <th>Detalle</th>
+                                    <th>Medio / Ubicación</th>
+                                    <th>Monto</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-hoy">
+                                <!-- Se rellena dinámicamente con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- VISTA APARTE: HISTORIAL COMPLETO (Oculto por defecto) -->
+        <main class="dashboard-grid" id="vista-historial" style="display: none;">
+            <div class="columna-completa">
                 <section class="card-historial">
                     <div class="historial-cabecera">
-                        <h3>📜 Panel de Registros</h3>
+                        <div class="historial-titulo-bloque">
+                            <button class="btn-volver" onclick="navegarA('dashboard')">← Volver al Panel</button>
+                            <h3>📜 Panel Histórico de Registros</h3>
+                        </div>
                         <div class="pestanas-filtros">
-                            <button class="btn-tab activo" id="tab-hoy" onclick="cambiarFiltro('hoy')">Hoy</button>
                             <button class="btn-tab" id="tab-mes" onclick="cambiarFiltro('mes')">Mes En Curso</button>
                             <button class="btn-tab" id="tab-archivo" onclick="cambiarFiltro('archivo')">Archivo Histórico</button>
                         </div>
                     </div>
 
-                    <!-- Selector de meses archivados (solo visible en modo archivo) -->
+                    <!-- Buscador Avanzado y Filtros por Medio de Pago -->
+                    <div class="barra-busqueda-filtros">
+                        <div class="filtro-item">
+                            <label for="buscar-texto">Buscar por Detalle:</label>
+                            <input type="text" id="buscar-texto" placeholder="Ej: Nafta..." oninput="filtrarHistorial()">
+                        </div>
+                        <div class="filtro-item">
+                            <label for="filtro-medio">Filtrar por Medio de Pago:</label>
+                            <select id="filtro-medio" onchange="filtrarHistorial()">
+                                <option value="todos">🔹 Todos los medios</option>
+                                <option value="Mercado Pago">📱 Mercado Pago</option>
+                                <option value="Naranja X">🍊 Naranja X</option>
+                                <option value="Banco Galicia">🦁 Banco Galicia</option>
+                                <option value="Banco Santander">🔴 Banco Santander</option>
+                                <option value="Efectivo">💵 Efectivo (Cualquier lugar)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Selector de meses archivados -->
                     <div id="contenedor-selector-archivo" class="selector-archivo-oculto">
                         <label for="selector-meses">Seleccionar Mes Pasado:</label>
                         <select id="selector-meses" onchange="cargarMesArchivado()"></select>
                     </div>
 
-                    <!-- Botones de Acción según la vista activa -->
                     <div class="acciones-historial">
                         <button id="btn-exportar" class="btn-accion btn-excel" onclick="exportarExcel()">📥 Descargar Excel</button>
                         <button id="btn-cerrar-mes" class="btn-accion btn-cierre" onclick="ejecutarCierreMensual()">🔒 Archivar y Cerrar Mes</button>
                     </div>
 
-                    <!-- Tabla con contenedor scrollable interno -->
-                    <div class="tabla-contenedor">
+                    <div class="tabla-contenedor contenedor-tabla-historial">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Miembro</th>
                                     <th>Detalle</th>
+                                    <th>Medio / Ubicación</th>
                                     <th>Tipo</th>
                                     <th>Monto</th>
-                                    <th>Acción</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-transacciones"></tbody>
@@ -119,7 +190,7 @@
             </div>
         </main>
 
-    </div> <!-- Fin .dashboard-container -->
+    </div>
 
     <script src="app.js"></script>
 </body>
