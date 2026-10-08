@@ -310,20 +310,77 @@ th, td {
 /* ==========================================
    MEDIA QUERIES (Alineación elástica en celulares)
    ========================================== */
+
+/* ==========================================
+   MEDIA QUERIES (100% Sin Scroll - Formato Tarjeta para Móviles)
+   ========================================== */
 @media (max-width: 900px) {
     .dashboard-grid { 
-        grid-template-columns: 1fr; /* Colapsa a 1 columna vertical en móvil */
+        grid-template-columns: 1fr; /* Una columna vertical en móvil */
     }
     
     .balances-individuales {
-        flex-wrap: wrap; /* Tarjetas de Diego y Romina van una abajo de la otra en celular */
+        flex-wrap: wrap; /* Tarjetas de Diego y Romina en vertical */
     }
     
     .card {
         flex: 1 1 140px;
     }
 
-    /* En celulares permitimos que la tabla fluya de forma nativa para evitar que las celdas queden super altas */
-    table { table-layout: auto; }
-    table th, table td { width: auto !important; white-space: nowrap !important; }
+    /* Ocultamos los encabezados de la tabla (Fecha, Miembro, etc.) porque ya no se leen en columnas */
+    thead {
+        display: none;
+    }
+
+    /* Convertimos la tabla y el cuerpo en bloques flexibles */
+    table, tbody, tr, td {
+        display: block;
+        width: 100%;
+    }
+
+    /* Cada fila ahora es una tarjeta independiente */
+    tr {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        box-sizing: border-box;
+    }
+
+    /* Ajustamos cada celda para que se alinee de forma compacta */
+    td {
+        border: none !important;
+        padding: 4px 0 !important;
+        white-space: normal !important;
+        font-size: 0.95rem !important; /* Tipografía cómoda y legible */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL DASHBOARD (TABLA CORTA) --- */
+    #lista-hoy tr td:nth-child(1)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(2)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(3)::before { content: "💳 Medio:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(4)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(5)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
+
+    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL HISTORIAL (TABLA LARGA) --- */
+    #lista-transacciones tr td:nth-child(1)::before { content: "📅 Fecha:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(2)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(3)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(4)::before { content: "💳 Medio:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(5)::before { content: "🔄 Tipo:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(6)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(7)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
+
+    /* Destacar el texto de la izquierda en las etiquetas automáticas */
+    td::before {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 }
+
