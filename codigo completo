@@ -33,27 +33,15 @@ index.html
             <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
             <div class="columna-izquierda">
                 <section class="balances-individuales">
-    <div class="card usuario-a">
-        <h3>Mes Actual: Diego</h3>
-        <p id="total-usuario-a">$0.00</p>
-    </div>
-    <div class="card usuario-b">
-        <h3>Mes Actual: Romina</h3>
-        <p id="total-usuario-b">$0.00</p>
-    </div>
-    <!-- NUEVA TARJETA: BILLETERAS DIGITALES -->
-    <div class="card card-billeteras">
-        <h3>Saldos Virtuales</h3>
-        <div class="sub-saldo">📱 MP: <span id="saldo-mp">$0.00</span></div>
-        <div class="sub-saldo">🍊 NX: <span id="saldo-nx">$0.00</span></div>
-    </div>
-    <!-- NUEVA TARJETA: EFECTIVO TOTAL -->
-    <div class="card card-efectivo">
-        <h3>💵 Efectivo Total</h3>
-        <p id="saldo-efectivo">$0.00</p>
-    </div>
-</section>
-
+                    <div class="card usuario-a">
+                        <h3>Mes Actual: Diego</h3>
+                        <p id="total-usuario-a">$0.00</p>
+                    </div>
+                    <div class="card usuario-b">
+                        <h3>Mes Actual: Romina</h3>
+                        <p id="total-usuario-b">$0.00</p>
+                    </div>
+                </section>
 
                 <section class="formulario-movimiento">
                     <h3>📝 Registrar Nuevo Movimiento</h3>
