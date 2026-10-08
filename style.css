@@ -88,11 +88,12 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
+/* --- Ajuste para la cuadrícula de 4 tarjetas --- */
 .balances-individuales {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Crea 2 columnas perfectas */
     gap: 15px;
     margin-bottom: 20px;
-    flex-wrap: nowrap; /* En PC se mantienen firmes lado a lado */
     width: 100%;
 }
 
@@ -101,11 +102,27 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     border-radius: 12px;
     padding: 15px 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    flex: 1 1 50%; /* Mitad de espacio para Diego y Romina */
     text-align: center; 
     border-left: 5px solid #ccc; 
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
+
+.card.card-billeteras { border-left-color: #2ecc71; }
+.card.card-efectivo { border-left-color: #f1c40f; }
+
+.sub-saldo {
+    font-size: 1.05rem;
+    font-weight: bold;
+    margin-top: 5px;
+    color: var(--primary-color);
+}
+.sub-saldo span {
+    color: #2c3e50;
+}
+
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
 .card h3 { margin: 0; font-size: 0.85rem; color: #7f8c8d; }

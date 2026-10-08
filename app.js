@@ -186,23 +186,42 @@ async function eliminarMovimiento(id) {
     }
 }
 // ACTUALIZAR RETICULA DE BALANCES EN TIEMPO REAL
+// ACTUALIZAR RETICULA DE BALANCES EN TIEMPO REAL (INCLUYE MP, NX Y EFECTIVO)
 function actualizarTodosLosBalances(movimientosMesActual) {
     const hoyStr = obtenerFechaHoyString();
     let acumuladoGlobal = 0;
     
-    // Sumar acumulados del archivo local histórico
+    // Variables para las nuevas tarjetas
+    let saldoMercadoPago = 0;
+    let saldoNaranjaX = 0;
+    let saldoEfectivo = 0;
+
+    // 1. Sumar acumulados del archivo local histórico (preventivo)
     const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
     Object.values(archivoHistorico).forEach(listaMes => {
         listaMes.forEach(mov => {
-            acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+            const impacto = (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+            acumuladoGlobal += impacto;
+            
+            // Clasificar por billetera en el histórico
+            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += impacto;
+            if (mov.medioPago === 'Naranja X') saldoNaranjaX += impacto;
+            if (mov.medioPago === 'Efectivo') saldoEfectivo += impacto;
         });
     });
 
-    // Sumar activos de MongoDB
+    // 2. Sumar activos de MongoDB
     movimientosMesActual.forEach(mov => {
-        acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        const impacto = (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        acumuladoGlobal += impacto;
+
+        // Clasificar por billetera en el mes actual
+        if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += impacto;
+        if (mov.medioPago === 'Naranja X') saldoNaranjaX += impacto;
+        if (mov.medioPago === 'Efectivo') saldoEfectivo += impacto;
     });
 
+    // 3. Cálculos diarios y por usuario (mes actual de MongoDB)
     let acumuladoDiario = 0;
     movimientosMesActual.filter(mov => mov.fecha === hoyStr).forEach(mov => {
         acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
@@ -215,11 +234,18 @@ function actualizarTodosLosBalances(movimientosMesActual) {
         if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
     });
 
+    // 4. Renderizar los datos en las etiquetas correspondientes del HTML
     if(document.getElementById("total-global")) document.getElementById("total-global").innerText = formatMoneda(acumuladoGlobal);
     if(document.getElementById("total-diario")) document.getElementById("total-diario").innerText = formatMoneda(acumuladoDiario);
     if(document.getElementById("total-usuario-a")) document.getElementById("total-usuario-a").innerText = formatMoneda(acumuladoDiego);
     if(document.getElementById("total-usuario-b")) document.getElementById("total-usuario-b").innerText = formatMoneda(acumuladoRomina);
+    
+    // Inyectar en las nuevas tarjetas
+    if(document.getElementById("saldo-mp")) document.getElementById("saldo-mp").innerText = formatMoneda(saldoMercadoPago);
+    if(document.getElementById("saldo-nx")) document.getElementById("saldo-nx").innerText = formatMoneda(saldoNaranjaX);
+    if(document.getElementById("saldo-efectivo")) document.getElementById("saldo-efectivo").innerText = formatMoneda(saldoEfectivo);
 }
+
 
 // FILTRADO DINÁMICO E INYECCIÓN DE TABLAS
 function procesarYRenderizarTablas() {
