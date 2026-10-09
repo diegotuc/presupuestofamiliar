@@ -38,6 +38,7 @@ function navegarA(pantalla) {
 }
 
 // CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO (SOPORTA TRASPASOS)
+// CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO (SOPORTA TRASPASOS Y FILTRO DE EGRESOS)
 function alternarCamposPago() {
     const tipo = document.getElementById("tipo").value;
     const labelMedioPago = document.getElementById("label-medio-pago");
@@ -61,18 +62,28 @@ function alternarCamposPago() {
 }
 
 function alternarUbicacionEfectivo() {
+    const tipo = document.getElementById("tipo").value;
     const medioPago = document.getElementById("medio-pago").value;
     const contenedorUbicacion = document.getElementById("contenedor-ubicacion-efectivo");
     const inputUbicacion = document.getElementById("ubicacion-efectivo");
+    const labelUbicacion = contenedorUbicacion ? contenedorUbicacion.querySelector("label") : null;
     
-    if (medioPago === 'Efectivo') {
-        contenedorUbicacion.style.display = "block";
+    // El campo de ubicación origen SOLO se muestra si es Efectivo Y ADEMÁS es un Ingreso o un Traspaso
+    if (medioPago === 'Efectivo' && (tipo === 'ingreso' || tipo === 'traspaso')) {
+        if (contenedorUbicacion) contenedorUbicacion.style.display = "block";
         if (inputUbicacion) inputUbicacion.required = true;
+        
+        // Adaptar dinámicamente el texto según la operación
+        if (labelUbicacion) {
+            labelUbicacion.innerText = tipo === 'traspaso' 
+                ? '¿Desde qué lugar físico sale el efectivo?:' 
+                : '¿Dónde está el dinero físico? (Destino):';
+        }
     } else {
-        contenedorUbicacion.style.display = "none";
+        if (contenedorUbicacion) contenedorUbicacion.style.display = "none";
         if (inputUbicacion) {
             inputUbicacion.required = false;
-            inputUbicacion.value = "";
+            inputUbicacion.value = ""; // Limpiar residuo para que no guarde basura en gastos
         }
     }
 }
@@ -84,16 +95,17 @@ function alternarUbicacionEfectivoDestino() {
     const inputUbicacionDestino = document.getElementById("ubicacion-efectivo-destino");
     
     if (tipo === 'traspaso' && medioDestino === 'Efectivo') {
-        contenedorUbicacionDestino.style.display = "block";
+        if (contenedorUbicacionDestino) contenedorUbicacionDestino.style.display = "block";
         if (inputUbicacionDestino) inputUbicacionDestino.required = true;
     } else {
-        contenedorUbicacionDestino.style.display = "none";
+        if (contenedorUbicacionDestino) contenedorUbicacionDestino.style.display = "none";
         if (inputUbicacionDestino) {
             inputUbicacionDestino.required = false;
             inputUbicacionDestino.value = "";
         }
     }
 }
+
 
 
 // 1. REGISTRAR O EDITAR MOVIMIENTO (POST / REEMPLAZO)
