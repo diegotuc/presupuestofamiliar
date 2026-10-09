@@ -37,15 +37,27 @@ function navegarA(pantalla) {
     procesarYRenderizarTablas();
 }
 
-// CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO
+// CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO (SOPORTA TRASPASOS)
 function alternarCamposPago() {
     const tipo = document.getElementById("tipo").value;
     const labelMedioPago = document.getElementById("label-medio-pago");
+    const contenedorDestino = document.getElementById("contenedor-destino");
+    const medioDestino = document.getElementById("medio-destino");
     
-    if (labelMedioPago) {
-        labelMedioPago.innerText = tipo === 'ingreso' ? 'Medio de Depósito:' : 'Medio de Pago:';
+    if (tipo === 'traspaso') {
+        if (labelMedioPago) labelMedioPago.innerText = '¿Desde dónde sale el dinero? (Origen):';
+        if (contenedorDestino) contenedorDestino.style.display = "block";
+        if (medioDestino) medioDestino.required = true;
+    } else {
+        if (labelMedioPago) labelMedioPago.innerText = tipo === 'ingreso' ? 'Medio de Depósito:' : 'Medio de Pago:';
+        if (contenedorDestino) contenedorDestino.style.display = "none";
+        if (medioDestino) {
+            medioDestino.required = false;
+            medioDestino.value = "Mercado Pago";
+        }
     }
     alternarUbicacionEfectivo();
+    alternarUbicacionEfectivoDestino();
 }
 
 function alternarUbicacionEfectivo() {
@@ -60,11 +72,32 @@ function alternarUbicacionEfectivo() {
         contenedorUbicacion.style.display = "none";
         if (inputUbicacion) {
             inputUbicacion.required = false;
-            inputUbicacion.value = ""; // Limpiar residuo
+            inputUbicacion.value = "";
         }
     }
 }
+
+function alternarUbicacionEfectivoDestino() {
+    const tipo = document.getElementById("tipo").value;
+    const medioDestino = document.getElementById("medio-destino").value;
+    const contenedorUbicacionDestino = document.getElementById("contenedor-ubicacion-efectivo-destino");
+    const inputUbicacionDestino = document.getElementById("ubicacion-efectivo-destino");
+    
+    if (tipo === 'traspaso' && medioDestino === 'Efectivo') {
+        contenedorUbicacionDestino.style.display = "block";
+        if (inputUbicacionDestino) inputUbicacionDestino.required = true;
+    } else {
+        contenedorUbicacionDestino.style.display = "none";
+        if (inputUbicacionDestino) {
+            inputUbicacionDestino.required = false;
+            inputUbicacionDestino.value = "";
+        }
+    }
+}
+
+
 // 1. REGISTRAR O EDITAR MOVIMIENTO (POST / REEMPLAZO)
+// 1. REGISTRAR O EDITAR MOVIMIENTO (POST / REEMPLAZO - ACTUALIZADO CON TRASPASOS)
 const formTransaccion = document.getElementById("form-transaccion");
 if (formTransaccion) {
     formTransaccion.addEventListener("submit", async (e) => {
@@ -75,6 +108,7 @@ if (formTransaccion) {
         const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
         const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
 
+        // Aquí empaquetamos todos los datos (incluyendo origen y destino del traspaso)
         const movimiento = {
             id: idEdicion ? parseInt(idEdicion) : Date.now(),
             fecha: fechaFormateada,
@@ -84,11 +118,13 @@ if (formTransaccion) {
             monto: parseFloat(document.getElementById("monto").value),
             descripcion: document.getElementById("descripcion").value,
             medioPago: document.getElementById("medio-pago").value,
-            ubicacionEfectivo: document.getElementById("ubicacion-efectivo").value || ""
+            ubicacionEfectivo: document.getElementById("ubicacion-efectivo").value || "",
+            medioDestino: document.getElementById("medio-destino").value || "",
+            ubicacionEfectivoDestino: document.getElementById("ubicacion-efectivo-destino").value || ""
         };
 
         try {
-            // SI ESTAMOS EDITANDO: Eliminamos primero el registro anterior de forma transparente
+            // SI ESTAMOS EDITANDO: Eliminamos primero el registro viejo de forma transparente
             if (idEdicion) {
                 const resDelete = await fetch(`/api/server?id=${idEdicion}`, { method: 'DELETE' });
                 if (!resDelete.ok) {
@@ -97,7 +133,7 @@ if (formTransaccion) {
                 }
             }
 
-            // GUARDAR NUEVO / CORREGIDO
+            // GUARDAR NUEVO O CORREGIDO EN MONGODB
             const res = await fetch('/api/server', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -117,7 +153,7 @@ if (formTransaccion) {
     });
 }
 
-// ACTIVAR MODO EDICIÓN (✏️)
+// ACTIVAR MODO EDICIÓN (✏️ - ACTUALIZADO CON TRASPASOS)
 function prepararEdicion(id) {
     const mov = transaccionesMemoria.find(m => m.id === id);
     if (!mov) return;
@@ -125,7 +161,7 @@ function prepararEdicion(id) {
     // Regresar al panel principal si el usuario estaba en el historial
     navegarA('dashboard');
 
-    // Forzar cambios en el formulario
+    // Volver a cargar todos los datos en los casilleros del formulario
     document.getElementById("edit-id").value = mov.id;
     document.getElementById("tipo").value = mov.tipo;
     document.getElementById("usuario").value = mov.usuario;
@@ -133,18 +169,23 @@ function prepararEdicion(id) {
     document.getElementById("descripcion").value = mov.descripcion;
     document.getElementById("medio-pago").value = mov.medioPago || "Mercado Pago";
     
-    alternarCamposPago(); // Actualiza etiquetas y despliega campo de efectivo si corresponde
+    // Cargar los campos nuevos de traspaso por si era un traspaso lo que se erró
+    document.getElementById("medio-destino").value = mov.medioDestino || "Mercado Pago";
+    document.getElementById("ubicacion-efectivo-destino").value = mov.ubicacionEfectivoDestino || "";
+    
+    alternarCamposPago(); // Actualiza etiquetas y despliega campos si corresponde
 
     if (mov.medioPago === 'Efectivo') {
         document.getElementById("ubicacion-efectivo").value = mov.ubicacionEfectivo || "";
     }
 
-    // Cambiar la interfaz del formulario para indicar edición
+    // Cambiar el diseño del formulario para avisar que estamos editando
     document.getElementById("form-titulo").innerText = "⚠️ Editando Movimiento";
     document.getElementById("btn-submit-form").innerText = "Guardar Cambios";
     document.getElementById("btn-submit-form").style.backgroundColor = "#e67e22";
     document.getElementById("btn-cancelar-edit").style.display = "block";
 }
+
 
 function cancelarEdicion() {
     if(formTransaccion) formTransaccion.reset();
@@ -185,66 +226,82 @@ async function eliminarMovimiento(id) {
         console.error("Error al eliminar movimiento:", error);
     }
 }
-// ACTUALIZAR RETICULA DE BALANCES EN TIEMPO REAL
-// ACTUALIZAR RETICULA DE BALANCES EN TIEMPO REAL (INCLUYE MP, NX Y EFECTIVO)
 function actualizarTodosLosBalances(movimientosMesActual) {
     const hoyStr = obtenerFechaHoyString();
     let acumuladoGlobal = 0;
     
-    // Variables para las nuevas tarjetas
     let saldoMercadoPago = 0;
     let saldoNaranjaX = 0;
     let saldoEfectivo = 0;
 
-    // 1. Sumar acumulados del archivo local histórico (preventivo)
+    // Procesar función matemática de impacto
+    const procesarImpactoBilleteras = (mov) => {
+        if (mov.tipo === 'ingreso') {
+            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += mov.monto;
+            if (mov.medioPago === 'Naranja X') saldoNaranjaX += mov.monto;
+            if (mov.medioPago === 'Efectivo') saldoEfectivo += mov.monto;
+        } 
+        else if (mov.tipo === 'gasto') {
+            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago -= mov.monto;
+            if (mov.medioPago === 'Naranja X') saldoNaranjaX -= mov.monto;
+            if (mov.medioPago === 'Efectivo') saldoEfectivo -= mov.monto;
+        } 
+        else if (mov.tipo === 'traspaso') {
+            // Restar al origen
+            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago -= mov.monto;
+            if (mov.medioPago === 'Naranja X') saldoNaranjaX -= mov.monto;
+            if (mov.medioPago === 'Efectivo') saldoEfectivo -= mov.monto;
+            // Sumar al destino
+            if (mov.medioDestino === 'Mercado Pago') saldoMercadoPago += mov.monto;
+            if (mov.medioDestino === 'Naranja X') saldoNaranjaX += mov.monto;
+            if (mov.medioDestino === 'Efectivo') saldoEfectivo += mov.monto;
+        }
+    };
+
+    // 1. Histórico local
     const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
     Object.values(archivoHistorico).forEach(listaMes => {
         listaMes.forEach(mov => {
-            const impacto = (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-            acumuladoGlobal += impacto;
-            
-            // Clasificar por billetera en el histórico
-            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += impacto;
-            if (mov.medioPago === 'Naranja X') saldoNaranjaX += impacto;
-            if (mov.medioPago === 'Efectivo') saldoEfectivo += impacto;
+            if (mov.tipo !== 'traspaso') {
+                acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+            }
+            procesarImpactoBilleteras(mov);
         });
     });
 
-    // 2. Sumar activos de MongoDB
+    // 2. MongoDB activos
     movimientosMesActual.forEach(mov => {
-        const impacto = (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        acumuladoGlobal += impacto;
-
-        // Clasificar por billetera en el mes actual
-        if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += impacto;
-        if (mov.medioPago === 'Naranja X') saldoNaranjaX += impacto;
-        if (mov.medioPago === 'Efectivo') saldoEfectivo += impacto;
+        if (mov.tipo !== 'traspaso') {
+            acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        }
+        procesarImpactoBilleteras(mov);
     });
 
-    // 3. Cálculos diarios y por usuario (mes actual de MongoDB)
+    // 3. Totales mensuales de usuario y diarios (Los traspasos no suman como ingreso ni gasto mensual)
     let acumuladoDiario = 0;
     movimientosMesActual.filter(mov => mov.fecha === hoyStr).forEach(mov => {
-        acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        if (mov.tipo !== 'traspaso') acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
     });
 
     let acumuladoDiego = 0;
     let acumuladoRomina = 0;
     movimientosMesActual.forEach(mov => {
-        if (mov.usuario === 'Diego') acumuladoDiego += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        if (mov.tipo !== 'traspaso') {
+            if (mov.usuario === 'Diego') acumuladoDiego += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+            if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
+        }
     });
 
-    // 4. Renderizar los datos en las etiquetas correspondientes del HTML
     if(document.getElementById("total-global")) document.getElementById("total-global").innerText = formatMoneda(acumuladoGlobal);
     if(document.getElementById("total-diario")) document.getElementById("total-diario").innerText = formatMoneda(acumuladoDiario);
     if(document.getElementById("total-usuario-a")) document.getElementById("total-usuario-a").innerText = formatMoneda(acumuladoDiego);
     if(document.getElementById("total-usuario-b")) document.getElementById("total-usuario-b").innerText = formatMoneda(acumuladoRomina);
     
-    // Inyectar en las nuevas tarjetas
     if(document.getElementById("saldo-mp")) document.getElementById("saldo-mp").innerText = formatMoneda(saldoMercadoPago);
     if(document.getElementById("saldo-nx")) document.getElementById("saldo-nx").innerText = formatMoneda(saldoNaranjaX);
     if(document.getElementById("saldo-efectivo")) document.getElementById("saldo-efectivo").innerText = formatMoneda(saldoEfectivo);
 }
+
 
 
 // FILTRADO DINÁMICO E INYECCIÓN DE TABLAS
@@ -308,9 +365,16 @@ function renderizarFilaTablaCorta(movimientos) {
 
     movimientos.forEach(mov => {
         const tr = document.createElement("tr");
-        const detalleMedio = mov.medioPago === 'Efectivo' 
-            ? `💵 Efectivo (${mov.ubicacionEfectivo || 'No especificada'})` 
-            : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+        // Reemplaza la definición de detalleMedio en ambas funciones de renderizado por esto:
+const detalleMedio = "";
+if (mov.tipo === 'traspaso') {
+    detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
+} else {
+    detalleMedio = mov.medioPago === 'Efectivo' 
+        ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
+        : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+}
+
 
         tr.innerHTML = `
             <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
@@ -342,9 +406,16 @@ function renderizarFilaTablaLarga(movimientos) {
 
     movimientos.forEach(mov => {
         const tr = document.createElement("tr");
-        const detalleMedio = mov.medioPago === 'Efectivo' 
-            ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
-            : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+        // Reemplaza la definición de detalleMedio en ambas funciones de renderizado por esto:
+const detalleMedio = "";
+if (mov.tipo === 'traspaso') {
+    detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
+} else {
+    detalleMedio = mov.medioPago === 'Efectivo' 
+        ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
+        : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+}
+
 
         const celdaAcciones = (filtroActivo === 'archivo') 
             ? `<td>🔒 Archivo</td>` 

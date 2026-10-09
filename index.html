@@ -53,58 +53,79 @@
 
                 <section class="formulario-movimiento">
                     <h3 id="form-titulo">📝 Registrar Nuevo Movimiento</h3>
-                    <form id="form-transaccion">
-                        <!-- Campo oculto para cuando estemos editando -->
-                        <input type="hidden" id="edit-id">
+                   <form id="form-transaccion">
+    <!-- Campo oculto para cuando estemos editando -->
+    <input type="hidden" id="edit-id">
 
-                        <div class="form-group">
-                            <label for="tipo">Tipo de Operación:</label>
-                            <select id="tipo" onchange="alternarCamposPago()" required>
-                                <option value="ingreso">Ingreso (Entrada de Dinero)</option>
-                                <option value="gasto">Gasto (Salida / Malgasto)</option>
-                            </select>
-                        </div>
+    <div class="form-group">
+        <label for="tipo">Tipo de Operación:</label>
+        <select id="tipo" onchange="alternarCamposPago()" required>
+            <option value="ingreso">Ingreso (Entrada de Dinero)</option>
+            <option value="gasto">Gasto (Salida / Malgasto)</option>
+            <option value="traspaso">🔄 Traspaso Interno (Mover dinero)</option>
+        </select>
+    </div>
 
-                        <div class="form-group">
-                            <label for="usuario">¿Quién realiza el movimiento?:</label>
-                            <select id="usuario" required>
-                                <option value="Diego">Diego</option>
-                                <option value="Romina">Romina</option>
-                            </select>
-                        </div>
+    <div class="form-group">
+        <label for="usuario">¿Quién realiza el movimiento?:</label>
+        <select id="usuario" required>
+            <option value="Diego">Diego</option>
+            <option value="Romina">Romina</option>
+        </select>
+    </div>
 
-                        <div class="form-group">
-                            <label id="label-medio-pago" for="medio-pago">Medio de Depósito:</label>
-                            <select id="medio-pago" onchange="alternarUbicacionEfectivo()" required>
-                                <option value="Mercado Pago">📱 Mercado Pago</option>
-                                <option value="Naranja X">🍊 Naranja X</option>
-                                <option value="Banco Galicia">🦁 Banco Galicia</option>
-                                <option value="Banco Santander">🔴 Banco Santander</option>
-                                <option value="Efectivo">💵 Efectivo</option>
-                            </select>
-                        </div>
+    <!-- Contenedor Origen (Sirve para Ingreso/Gasto habitual y como ORIGEN en traspasos) -->
+    <div class="form-group" id="contenedor-origen">
+        <label id="label-medio-pago" for="medio-pago">Medio de Depósito:</label>
+        <select id="medio-pago" onchange="alternarUbicacionEfectivo()" required>
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Naranja X">🍊 Naranja X</option>
+            <option value="Banco Galicia">🦁 Banco Galicia</option>
+            <option value="Banco Santander">🔴 Banco Santander</option>
+            <option value="Efectivo">💵 Efectivo</option>
+        </select>
+    </div>
 
-                        <!-- Campo Dinámico para Efectivo -->
-                        <div class="form-group" id="contenedor-ubicacion-efectivo" style="display: none;">
-                            <label for="ubicacion-efectivo">¿Dónde está el dinero físico?:</label>
-                            <input type="text" id="ubicacion-efectivo" placeholder="Ej: Billetera, mesita de luz, mesa">
-                        </div>
+    <!-- Campo Dinámico para Efectivo Origen -->
+    <div class="form-group" id="contenedor-ubicacion-efectivo" style="display: none;">
+        <label for="ubicacion-efectivo">¿Dónde está/estaba el dinero físico?:</label>
+        <input type="text" id="ubicacion-efectivo" placeholder="Ej: Billetera, mesita de luz">
+    </div>
 
-                        <div class="form-group">
-                            <label for="monto">Monto ($):</label>
-                            <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
-                        </div>
+    <!-- NUEVO: Contenedor Destino (Solo visible si es TRASPASO) -->
+    <div class="form-group" id="contenedor-destino" style="display: none;">
+        <label for="medio-destino">¿Hacia dónde se mueve el dinero? (Destino):</label>
+        <select id="medio-destino" onchange="alternarUbicacionEfectivoDestino()">
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Naranja X">🍊 Naranja X</option>
+            <option value="Banco Galicia">🦁 Banco Galicia</option>
+            <option value="Banco Santander">🔴 Banco Santander</option>
+            <option value="Efectivo">💵 Efectivo</option>
+        </select>
+    </div>
 
-                        <div class="form-group">
-                            <label for="descripcion">Detalle, Origen o Concepto:</label>
-                            <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
-                        </div>
+    <!-- NUEVO: Campo Dinámico para Efectivo Destino -->
+    <div class="form-group" id="contenedor-ubicacion-efectivo-destino" style="display: none;">
+        <label for="ubicacion-efectivo-destino">¿A qué lugar físico va el efectivo?:</label>
+        <input type="text" id="ubicacion-efectivo-destino" placeholder="Ej: Cuenta de luz, Billetera">
+    </div>
 
-                        <div class="botones-formulario">
-                            <button type="submit" class="btn-guardar" id="btn-submit-form">Guardar Movimiento</button>
-                            <button type="button" class="btn-cancelar" id="btn-cancelar-edit" style="display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
-                        </div>
-                    </form>
+    <div class="form-group">
+        <label for="monto">Monto ($):</label>
+        <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Detalle, Origen o Concepto:</label>
+        <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Traspaso a MP" required>
+    </div>
+
+    <div class="botones-formulario">
+        <button type="submit" class="btn-guardar" id="btn-submit-form">Guardar Movimiento</button>
+        <button type="button" class="btn-cancelar" id="btn-cancelar-edit" style="display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
+    </div>
+</form>
+
                 </section>
             </div>
 
