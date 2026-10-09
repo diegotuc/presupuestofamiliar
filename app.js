@@ -351,7 +351,7 @@ function filtrarHistorial() {
     renderizarFilaTablaLarga(movimientosAMostrar);
 }
 
-// INYECTAR TABLA COMPACTA (Dashboard Principal)
+// INYECTAR TABLA COMPACTA (Dashboard Principal - CORREGIDA)
 function renderizarFilaTablaCorta(movimientos) {
     const listaHoyContenedor = document.getElementById("lista-hoy");
     if (!listaHoyContenedor) return;
@@ -365,23 +365,23 @@ function renderizarFilaTablaCorta(movimientos) {
 
     movimientos.forEach(mov => {
         const tr = document.createElement("tr");
-        // Reemplaza la definición de detalleMedio en ambas funciones de renderizado por esto:
-const detalleMedio = "";
-if (mov.tipo === 'traspaso') {
-    detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
-} else {
-    detalleMedio = mov.medioPago === 'Efectivo' 
-        ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
-        : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
-}
-
+        
+        // CORRECCIÓN AQUÍ: Usamos 'let' en lugar de 'const' para poder modificar el texto dinámicamente
+        let detalleMedio = "";
+        if (mov.tipo === 'traspaso') {
+            detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
+        } else {
+            detalleMedio = mov.medioPago === 'Efectivo' 
+                ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
+                : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+        }
 
         tr.innerHTML = `
             <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
             <td>${mov.descripcion}</td>
             <td style="font-size: 0.85rem; color: #566573;">${detalleMedio}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">
-                ${mov.tipo === 'ingreso' ? '+' : '-'}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">
+                ${mov.tipo === 'ingreso' ? '+' : (mov.tipo === 'gasto' ? '-' : '')}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </td>
             <td>
                 <button class="btn-editar" onclick="prepararEdicion(${mov.id})">✏️</button>
@@ -392,7 +392,7 @@ if (mov.tipo === 'traspaso') {
     });
 }
 
-// INYECTAR TABLA EXTENDIDA (Historial Completo)
+// INYECTAR TABLA EXTENDIDA (Historial Completo - CORREGIDA)
 function renderizarFilaTablaLarga(movimientos) {
     const listaHistorialContenedor = document.getElementById("lista-transacciones");
     if (!listaHistorialContenedor) return;
@@ -406,16 +406,16 @@ function renderizarFilaTablaLarga(movimientos) {
 
     movimientos.forEach(mov => {
         const tr = document.createElement("tr");
-        // Reemplaza la definición de detalleMedio en ambas funciones de renderizado por esto:
-const detalleMedio = "";
-if (mov.tipo === 'traspaso') {
-    detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
-} else {
-    detalleMedio = mov.medioPago === 'Efectivo' 
-        ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
-        : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
-}
-
+        
+        // CORRECCIÓN AQUÍ: Usamos 'let' para que no se rompa al asignar el traspaso
+        let detalleMedio = "";
+        if (mov.tipo === 'traspaso') {
+            detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
+        } else {
+            detalleMedio = mov.medioPago === 'Efectivo' 
+                ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
+                : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
+        }
 
         const celdaAcciones = (filtroActivo === 'archivo') 
             ? `<td>🔒 Archivo</td>` 
@@ -429,15 +429,16 @@ if (mov.tipo === 'traspaso') {
             <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
             <td>${mov.descripcion}</td>
             <td style="font-size: 0.85rem; color: #566573;">${detalleMedio}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">${mov.tipo.toUpperCase()}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">
-                ${mov.tipo === 'ingreso' ? '+' : '-'}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">${mov.tipo.toUpperCase()}</td>
+            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">
+                ${mov.tipo === 'ingreso' ? '+' : (mov.tipo === 'gasto' ? '-' : '')}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </td>
             ${celdaAcciones}
         `;
         listaHistorialContenedor.appendChild(tr);
     });
 }
+
 
 function obtenerIconoMedio(medio) {
     switch (medio) {
