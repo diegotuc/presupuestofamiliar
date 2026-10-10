@@ -203,25 +203,30 @@ function procesarYRenderizarTodo() {
     let mesActualAño = new Date().getMonth();
     let añoActual = new Date().getFullYear();
 
-    // >>> CORRECCIÓN ABSOLUTA V2.1: Mapeo exacto de índices para no romper el renderizado <<<
-    let fechaAuditoriaStr = "";
-if (fechaFiltroDiario) {
-    let partes = fechaFiltroDiario.split("-"); // partes[0]=Año, partes[1]=Mes, partes[2]=Día
-    fechaAuditoriaStr = `${partes[2]}/${partes[1]}/${partes[0]}`; // Formato exacto DD/MM/AAAA
-} else {
-    fechaAuditoriaStr = new Date().toLocaleDateString('es-AR');
-}
+    // >>> SEGURIDAD V2.1: Desarmamos la fecha del selector (YYYY-MM-DD) en números puros
+    let filtroAnio = 0, filtroMes = 0, filtroDia = 0;
+    if (fechaFiltroDiario) {
+        let partes = fechaFiltroDiario.split("-");
+        filtroAnio = parseInt(partes[0]);
+        filtroMes = parseInt(partes[1]) - 1; // En JS los meses van de 0 a 11
+        filtroDia = parseInt(partes[2]);
+    } else {
+        let hoy = new Date();
+        filtroAnio = hoy.getFullYear();
+        filtroMes = hoy.getMonth();
+        filtroDia = hoy.getDate();
+    }
 
-
-    // Procesamos el listado completo de transacciones en orden cronológico inverso
+    // Procesamos el listado completo de transacciones
     transaccionesGlobal.forEach(t => {
         let monto = parseFloat(t.monto) || 0;
         let fechaT = new Date(t.id);
         let esMesEnCurso = fechaT.getMonth() === mesActualAño && fechaT.getFullYear() === añoActual;
         
-        // Comparamos cada transacción contra la fecha activa en la máquina del tiempo
-        let fechaMovimientoStr = new Date(t.id).toLocaleDateString('es-AR');
-        let esFechaAuditada = fechaMovimientoStr === fechaAuditoriaStr;
+        // >>> SEGURIDAD V2.1: Comparamos numéricamente año, mes y día de cada registro
+        let esFechaAuditada = fechaT.getFullYear() === filtroAnio && 
+                             fechaT.getMonth() === filtroMes && 
+                             fechaT.getDate() === filtroDia;
 
         // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES ---
         if (t.tipo === 'ingreso') {
@@ -272,15 +277,13 @@ if (fechaFiltroDiario) {
         }
     });
 
-    // Dinero Real Disponible es la suma de todas las disponibilidades líquidas reales
     let dineroRealDisponible = saldoMercadoPago + saldoNaranjaX + saldoGalicia + saldoSantander + saldoEfectivoTotal;
     let balanceNetoHoy = totalIngresosHoy - totalGastosHoy;
 
     // 2. Renderizado de las 3 Cards Tops Principales
     document.getElementById('total-global').innerHTML = `$${fondoTotalAcumulado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
-    // CORRECCIÓN EXTRA SEGURO: Volvemos a apuntar a total-real según tu JS nativo original
-    const elReal = document.getElementById('total-real');
+    let elReal = document.getElementById('total-real');
     if (elReal) {
         elReal.innerHTML = `$${dineroRealDisponible.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
@@ -294,13 +297,14 @@ if (fechaFiltroDiario) {
     document.getElementById('saldo-nx').innerHTML = `$${saldoNaranjaX.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('saldo-efectivo').innerHTML = `$${saldoEfectivoTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Viajan en el tiempo)
+    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Sincronizadas con números puros)
     document.getElementById('mini-ingreso-hoy').innerHTML = `$${totalIngresosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('mini-gasto-hoy').innerHTML = `$${totalGastosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 5. Dibujar la tabla de movimientos de hoy respetando filtros aplicados
+    // 5. Dibujar la tabla
     renderizarTablaHoy();
 }
+
 
 
 
@@ -329,21 +333,32 @@ function renderizarTablaHoy() {
     if (!tbody) return;
     tbody.innerHTML = '';
     
-    // >>> MODIFICADO V2.1: Filtrado reactivo por la fecha seleccionada en el input <<<
+    // >>> SEGURIDAD V2.1: Desarmamos la fecha del selector en números puros
+    let filtroAnio = 0, filtroMes = 0, filtroDia = 0;
+    if (fechaFiltroDiario) {
+        let partes = fechaFiltroDiario.split("-");
+        filtroAnio = parseInt(partes[0]);
+        filtroMes = parseInt(partes[1]) - 1;
+        filtroDia = parseInt(partes[2]);
+    } else {
+        let hoy = new Date();
+        filtroAnio = hoy.getFullYear();
+        filtroMes = hoy.getMonth();
+        filtroDia = hoy.getDate();
+    }
+    
+    // Filtrar movimientos pertenecientes al día seleccionado numéricamente
     let movimientosHoy = transaccionesGlobal.filter(t => {
-        const fechaT = new Date(t.id);
-        const desfasaje = fechaT.getTimezoneOffset() * 60000;
-        const fechaLocal = new Date(fechaT.getTime() - desfasaje);
-        const tFechaStr = fechaLocal.toISOString().split("T")[0]; // Obtiene "YYYY-MM-DD"
-        return tFechaStr === fechaFiltroDiario;
+        let fechaT = new Date(t.id);
+        return fechaT.getFullYear() === filtroAnio && 
+               fechaT.getMonth() === filtroMes && 
+               fechaT.getDate() === filtroDia;
     });
     
-    // Aplicar el filtro por tipo seleccionado en las pestañas del dashboard (Mantiene tu lógica intacta)
     if (filtroHoySeleccionado !== 'todos') {
         movimientosHoy = movimientosHoy.filter(t => t.tipo === filtroHoySeleccionado);
     }
 
-    // Ocultar o mostrar las mini-cards de forma inteligente según la pestaña activa (Mantiene tu lógica intacta)
     const cardIngreso = document.getElementById('mini-card-hoy-ingreso');
     const cardGasto = document.getElementById('mini-card-hoy-gasto');
 
@@ -358,7 +373,6 @@ function renderizarTablaHoy() {
         if (cardGasto) cardGasto.style.display = 'flex';
     }
 
-    // Mensaje dinámico adaptado si no hay movimientos el día auditado
     if (movimientosHoy.length === 0) {
         const mensajeFalta = fechaFiltroDiario === fechaHoySistemaStr 
             ? "No hay movimientos registrados hoy." 
@@ -398,6 +412,7 @@ function renderizarTablaHoy() {
         tbody.appendChild(tr);
     });
 }
+
 
 
 // PUNTO 5: SÚPER FILTROS CRUZADOS Y PANEL DE TOTALES DINÁMICOS EN HISTORIAL
