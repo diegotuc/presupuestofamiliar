@@ -550,30 +550,48 @@ function renderizarTablaHistorialCompleto(registros) {
     });
 }
 
-// GUARDAR NUEVO MOVIMIENTO / CONFIRMAR EDICIÓN
+// GUARDAR NUEVO MOVIMIENTO / CONFIRMAR EDICIÓN (VERSIÓN 2.1 CON CARGA EN EL PASADO)
 async function guardarMovimiento(e) {
     e.preventDefault();
 
-    const editId = document.getElementById('edit-id').value;
-    const tipo = document.getElementById('tipo').value;
-    const usuario = document.getElementById('usuario').value;
-    const medioPago = document.getElementById('medio-pago').value;
-    const ubicacionEfectivo = document.getElementById('ubicacion-efectivo').value;
-    const medioDestino = document.getElementById('medio-destino').value;
-    const monto = parseFloat(document.getElementById('monto').value);
-    const descripcion = document.getElementById('descripcion').value;
+    let editId = document.getElementById('edit-id').value;
+    let tipo = document.getElementById('tipo').value;
+    let usuario = document.getElementById('usuario').value;
+    let medioPago = document.getElementById('medio-pago').value;
+    let ubicacionEfectivo = document.getElementById('ubicacion-efectivo').value;
+    let medioDestino = document.getElementById('medio-destino').value;
+    let monto = parseFloat(document.getElementById('monto').value);
+    let descripcion = document.getElementById('descripcion').value;
 
-    const transaccion = {
-        id: editId ? parseInt(editId) : Date.now(),
-        tipo,
-            id: editId ? parseInt(editId) : Date.now(),
-        tipo,
-        usuario,
-        medioPago,
+    // >>> LÓGICA INTELIGENTE DE MÁQUINA DEL TIEMPO PARA NUEVOS REGISTROS <<<
+    let idFinal = 0;
+    
+    if (editId) {
+        // Si estamos editando, conservamos el ID original (marca de tiempo vieja)
+        idFinal = parseInt(editId);
+    } else {
+        // Si es un registro nuevo, evaluamos dónde está parada la máquina del tiempo
+        if (fechaFiltroDiario === fechaHoySistemaStr) {
+            // Caso A (Presente): Se registra con la estampa de hora exacta de este microsegundo
+            idFinal = Date.now();
+        } else {
+            // Caso B (Pasado): Cargando un olvido. Creamos la estampa fijada en el día auditado
+            // Seteamos la operación a las 12:00 del mediodía de esa fecha elegida para evitar desfasajes horariios
+            let partes = fechaFiltroDiario.split("-"); // [Año, Mes, Día]
+            let fechaFijada = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 12, 0, 0);
+            idFinal = fechaFijada.getTime();
+        }
+    }
+
+    let transaccion = {
+        id: idFinal,
+        tipo: tipo,
+        usuario: usuario,
+        medioPago: medioPago,
         ubicacionEfectivo: (tipo === 'ingreso' && medioPago === 'Efectivo') ? ubicacionEfectivo : '',
         medioDestino: tipo === 'traspaso' ? medioDestino : '',
-        monto,
-        descripcion
+        monto: monto,
+        descripcion: descripcion
     };
 
     try {
@@ -583,7 +601,7 @@ async function guardarMovimiento(e) {
         }
 
         // Enviamos el registro nuevo o corregido por POST a Render
-        const respuesta = await fetch(API_URL, {
+        let respuesta = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transaccion)
@@ -593,6 +611,7 @@ async function guardarMovimiento(e) {
 
         // Limpieza y reseteo completo del formulario
         cancelarEdicion();
+        
         // Recargar los movimientos y actualizar balances en tiempo real
         cargarMovimientos();
     } catch (error) {
@@ -600,6 +619,7 @@ async function guardarMovimiento(e) {
         alert("Hubo un problema al guardar el movimiento en el servidor.");
     }
 }
+
 
 // PREPARAR PANEL PARA EDICIÓN (✏️)
 function prepararEdicion(id) {
