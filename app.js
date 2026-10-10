@@ -2,20 +2,16 @@
 const API_URL = '/api/server';
 
 // Variables de estado de la aplicación (Versión 2.1)
-// CORRECCIÓN EN LA LÍNEA 5 DE APP.JS
+// CORRECCIÓN EN LA LÍNEA 5 DE APP.JS - MÁQUINA DEL TIEMPO LIMPIA
 let transaccionesGlobal = [];
 
 let filtroPeriodoActual = 'mes'; // 'mes' o 'archivo'
 let filtroHoySeleccionado = 'todos'; // 'todos', 'ingreso', 'gasto'
-let filtroHoySeleccionado = 'todos'; // 'todos', 'ingreso', 'gasto'
 
-// >>> NUEVO: Variables de control para la Máquina del Tiempo Diaria <<<
+// Variables de control para la Máquina del Tiempo Diaria (Declaradas UNA sola vez)
 let fechaFiltroDiario = ""; 
 let fechaHoySistemaStr = ""; 
 
-// Variable global para controlar la fecha seleccionada en la máquina del tiempo
-let fechaFiltroDiario = ""; 
-let fechaHoySistemaStr = ""; 
 
 // Al cargar el documento, iniciamos la app (Versión 2.1 con Máquina del Tiempo)
 document.addEventListener('DOMContentLoaded', () => {
@@ -207,14 +203,15 @@ function procesarYRenderizarTodo() {
     let mesActualAño = new Date().getMonth();
     let añoActual = new Date().getFullYear();
 
-    // >>> CORRECCIÓN CRÍTICA V2.1: Mapeo exacto de la fecha para la Máquina del Tiempo <<<
+    // >>> CORRECCIÓN ABSOLUTA V2.1: Mapeo exacto de índices para no romper el renderizado <<<
     let fechaAuditoriaStr = "";
-    if (fechaFiltroDiario) {
-        let partes = fechaFiltroDiario.split("-"); // partes[0]=Anio, partes[1]=Mes, partes[2]=Dia
-        fechaAuditoriaStr = `${partes[2]}/${partes[1]}/${partes[0]}`; // Formato exacto DD/MM/AAAA
-    } else {
-        fechaAuditoriaStr = new Date().toLocaleDateString('es-AR');
-    }
+if (fechaFiltroDiario) {
+    let partes = fechaFiltroDiario.split("-"); // partes[0]=Año, partes[1]=Mes, partes[2]=Día
+    fechaAuditoriaStr = `${partes[2]}/${partes[1]}/${partes[0]}`; // Formato exacto DD/MM/AAAA
+} else {
+    fechaAuditoriaStr = new Date().toLocaleDateString('es-AR');
+}
+
 
     // Procesamos el listado completo de transacciones en orden cronológico inverso
     transaccionesGlobal.forEach(t => {
@@ -226,7 +223,7 @@ function procesarYRenderizarTodo() {
         let fechaMovimientoStr = new Date(t.id).toLocaleDateString('es-AR');
         let esFechaAuditada = fechaMovimientoStr === fechaAuditoriaStr;
 
-        // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES (Se mantiene intacta) ---
+        // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES ---
         if (t.tipo === 'ingreso') {
             fondoTotalAcumulado += monto;
             if (esMesEnCurso) {
@@ -241,7 +238,7 @@ function procesarYRenderizarTodo() {
             }
         }
 
-        // --- LÓGICA DE LIQUIDEZ Y MEDIOS DE PAGO (Se mantiene intacta) ---
+        // --- LÓGICA DE LIQUIDEZ Y MEDIOS DE PAGO ---
         if (t.tipo === 'ingreso') {
             if (t.medioPago === 'Mercado Pago') saldoMercadoPago += monto;
             else if (t.medioPago === 'Naranja X') saldoNaranjaX += monto;
@@ -269,19 +266,25 @@ function procesarYRenderizarTodo() {
         }
 
         // --- LÓGICA DE CONTROL DIARIO RECALCULADA ---
-        // Al cambiar de fecha, acumula únicamente lo que entró/salió en el día auditado
         if (esFechaAuditada) {
             if (t.tipo === 'ingreso') totalIngresosHoy += monto;
             if (t.tipo === 'gasto') totalGastosHoy += monto;
         }
     });
 
+    // Dinero Real Disponible es la suma de todas las disponibilidades líquidas reales
     let dineroRealDisponible = saldoMercadoPago + saldoNaranjaX + saldoGalicia + saldoSantander + saldoEfectivoTotal;
     let balanceNetoHoy = totalIngresosHoy - totalGastosHoy;
 
     // 2. Renderizado de las 3 Cards Tops Principales
     document.getElementById('total-global').innerHTML = `$${fondoTotalAcumulado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    document.getElementById('total-real').innerHTML = `$${dineroRealDisponible.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    // CORRECCIÓN EXTRA SEGURO: Volvemos a apuntar a total-real según tu JS nativo original
+    const elReal = document.getElementById('total-real');
+    if (elReal) {
+        elReal.innerHTML = `$${dineroRealDisponible.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
     document.getElementById('total-diario').innerHTML = `$${balanceNetoHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // 3. Renderizado de Tarjetas del Dashboard Izquierdo
@@ -291,13 +294,14 @@ function procesarYRenderizarTodo() {
     document.getElementById('saldo-nx').innerHTML = `$${saldoNaranjaX.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('saldo-efectivo').innerHTML = `$${saldoEfectivoTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Viajan en el tiempo con los montos recalculados)
+    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Viajan en el tiempo)
     document.getElementById('mini-ingreso-hoy').innerHTML = `$${totalIngresosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('mini-gasto-hoy').innerHTML = `$${totalGastosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // 5. Dibujar la tabla de movimientos de hoy respetando filtros aplicados
     renderizarTablaHoy();
 }
+
 
 
 
