@@ -138,15 +138,26 @@
             <div class="columna-derecha">
                 <section class="card-resumen-hoy">
                     <div class="resumen-hoy-cabecera">
-                        <div class="cabecera-hoy-titulo-bloque">
-                            <h3>📅 Movimientos de Hoy</h3>
-                            <!-- Filtro inteligente integrado en el Dashboard principal -->
-                            <div class="filtros-hoy-pestanas">
-                                <button class="btn-tab-hoy activo" id="tab-hoy-todos" onclick="filtrarHoy('todos')">Todos</button>
-                                <button class="btn-tab-hoy" id="tab-hoy-ingresos" onclick="filtrarHoy('ingreso')">Ingresos</button>
-                                <button class="btn-tab-hoy" id="tab-hoy-gastos" onclick="filtrarHoy('gasto')">Gastos</button>
-                            </div>
-                        </div>
+                        <div class="resumen-hoy-cabecera">
+    <!-- REEMPLAZO QUIRÚRGICO DE TU CABECERA DE TÍTULO -->
+    <div class="cabecera-hoy-titulo-bloque">
+        <!-- Contenedor flex para alinear el título y el almanaque inline tal cual tu imagen -->
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <h3 id="titulo-movimientos-diarios" style="margin: 0;">📅 Movimientos de Hoy</h3>
+            <input type="date" id="filtro-fecha-diaria" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.9rem; cursor: pointer; color: #2c3e50;">
+        </div>
+        
+        <!-- Filtro inteligente integrado (CONSERVADO EXACTO) -->
+        <div class="filtros-hoy-pestanas">
+            <button class="btn-tab-hoy activo" id="tab-hoy-todos" onclick="filtrarHoy('todos')">Todos</button>
+            <button class="btn-tab-hoy" id="tab-hoy-ingresos" onclick="filtrarHoy('ingreso')">Ingresos</button>
+            <button class="btn-tab-hoy" id="tab-hoy-gastos" onclick="filtrarHoy('gasto')">Gastos</button>
+        </div>
+    </div>
+    
+    <!-- ABAJO CONTINÚA TU ARCHIVO TAL CUAL ESTÁ: -->
+    <!-- (No copies ni agregues las mini-cards ni el botón de ver historial acá porque ya existen en tu archivo abajo de este bloque) -->
+
                         
                         <!-- Mini-Cards Diarias Dinámicas que ocultan según la selección -->
                         <div class="contenedor-mini-cards-hoy">
@@ -179,7 +190,7 @@
                             </tbody>
                         </table>
                     </div>
-                </section>
+                </section>-->
             </div>
         </main>
 

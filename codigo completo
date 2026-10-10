@@ -135,7 +135,28 @@ index.html
             <div class="columna-derecha">
                 <section class="card-resumen-hoy">
                     <div class="resumen-hoy-cabecera">
-                        <h3>📅 Movimientos de Hoy</h3>
+                        <div class="cabecera-hoy-titulo-bloque">
+                            <h3>📅 Movimientos de Hoy</h3>
+                            <!-- Filtro inteligente integrado en el Dashboard principal -->
+                            <div class="filtros-hoy-pestanas">
+                                <button class="btn-tab-hoy activo" id="tab-hoy-todos" onclick="filtrarHoy('todos')">Todos</button>
+                                <button class="btn-tab-hoy" id="tab-hoy-ingresos" onclick="filtrarHoy('ingreso')">Ingresos</button>
+                                <button class="btn-tab-hoy" id="tab-hoy-gastos" onclick="filtrarHoy('gasto')">Gastos</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Mini-Cards Diarias Dinámicas que ocultan según la selección -->
+                        <div class="contenedor-mini-cards-hoy">
+                            <div class="mini-card-hoy ingreso" id="mini-card-hoy-ingreso">
+                                <span class="mini-label">🟢 Entró Hoy</span>
+                                <span class="mini-monto" id="mini-ingreso-hoy">$0.00</span>
+                            </div>
+                            <div class="mini-card-hoy gasto" id="mini-card-hoy-gasto">
+                                <span class="mini-label">🔴 Salió Hoy</span>
+                                <span class="mini-monto" id="mini-gasto-hoy">$0.00</span>
+                            </div>
+                        </div>
+
                         <button class="btn-navegacion" onclick="navegarA('historial')">🔍 Ver Historial Completo →</button>
                     </div>
                     

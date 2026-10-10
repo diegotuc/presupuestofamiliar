@@ -7,12 +7,65 @@ let transaccionesGlobal = [];
 
 let filtroPeriodoActual = 'mes'; // 'mes' o 'archivo'
 let filtroHoySeleccionado = 'todos'; // 'todos', 'ingreso', 'gasto'
+let filtroHoySeleccionado = 'todos'; // 'todos', 'ingreso', 'gasto'
 
-// Al cargar el documento, iniciamos la app
+// >>> NUEVO: Variables de control para la Máquina del Tiempo Diaria <<<
+let fechaFiltroDiario = ""; 
+let fechaHoySistemaStr = ""; 
+
+// Variable global para controlar la fecha seleccionada en la máquina del tiempo
+let fechaFiltroDiario = ""; 
+let fechaHoySistemaStr = ""; 
+
+// Al cargar el documento, iniciamos la app (Versión 2.1 con Máquina del Tiempo)
 document.addEventListener('DOMContentLoaded', () => {
     inicializarFormulario();
+
+    // Capturamos los elementos del DOM que editamos en el HTML
+    const inputFecha = document.getElementById('filtro-fecha-diaria');
+    const tituloSeccion = document.getElementById('titulo-movimientos-diarios');
+    const labelEntro = document.getElementById('label-entro-dia');
+    const labelSalio = document.getElementById('label-salio-dia');
+
+    // Calculamos de forma exacta la fecha de hoy local en formato "YYYY-MM-DD"
+    const hoy = new Date();
+    const desfasaje = hoy.getTimezoneOffset() * 60000;
+    const hoyLocal = new Date(hoy.getTime() - desfasaje);
+    fechaHoySistemaStr = hoyLocal.toISOString().split("T")[0]; // Retorna "2026-10-10"
+
+    if (inputFecha) {
+        // Inicializamos el almanaque flotante con el día actual
+        inputFecha.value = fechaHoySistemaStr;
+        fechaFiltroDiario = fechaHoySistemaStr;
+
+        // Escuchador dinámico: Se ejecuta CADA VEZ que cambiás el día en el calendario
+        inputFecha.addEventListener('change', (e) => {
+            const fechaSeleccionada = e.target.value;
+            if (!fechaSeleccionada) return;
+
+            fechaFiltroDiario = fechaSeleccionada;
+
+            // Mutación estética de los títulos y las etiquetas según el día elegido
+            if (fechaSeleccionada === fechaHoySistemaStr) {
+                if (tituloSeccion) tituloSeccion.textContent = "📅 Movimientos de Hoy";
+                if (labelEntro) labelEntro.textContent = "🟢 Entró Hoy";
+                if (labelSalio) labelSalio.textContent = "🔴 Salió Hoy";
+            } else {
+                const [anio, mes, dia] = fechaSeleccionada.split("-");
+                if (tituloSeccion) tituloSeccion.textContent = `📅 Movimientos del ${dia}/${mes}`;
+                if (labelEntro) labelEntro.textContent = `🟢 Entró el ${dia}/${mes}`;
+                if (labelSalio) labelSalio.textContent = `🔴 Salió el ${dia}/${mes}`;
+            }
+
+            // Repoblar la tabla derecha inmediatamente sin recargar la página
+            procesarYRenderizarTodo();
+        });
+    }
+
+    // Carga inicial nativa que ya tenías funcionando
     cargarMovimientos();
 });
+
 
 // NAVEGACIÓN ENTRE DASHBOARD E HISTORIAL
 function navegarA(vista) {
@@ -135,6 +188,7 @@ async function cargarMovimientos() {
 }
 
 // PROCESAMIENTO CENTRAL DE BALANCES Y RENDERIZADO DEL DASHBOARD
+
 function procesarYRenderizarTodo() {
     // 1. Inicialización de contadores y acumuladores matemáticos
     let fondoTotalAcumulado = 0;
@@ -149,19 +203,30 @@ function procesarYRenderizarTodo() {
     let totalIngresosHoy = 0;
     let totalGastosHoy = 0;
 
-    // Obtener marcas de tiempo para controlar "Hoy" y el "Mes En Curso"
-    const hoyStr = new Date().toLocaleDateString('es-AR');
-    const mesActualAño = new Date().getMonth();
-    const añoActual = new Date().getFullYear();
+    // Control del Mes En Curso para las tarjetas de Diego y Romina
+    let mesActualAño = new Date().getMonth();
+    let añoActual = new Date().getFullYear();
+
+    // >>> CORRECCIÓN CRÍTICA V2.1: Mapeo exacto de la fecha para la Máquina del Tiempo <<<
+    let fechaAuditoriaStr = "";
+    if (fechaFiltroDiario) {
+        let partes = fechaFiltroDiario.split("-"); // partes[0]=Anio, partes[1]=Mes, partes[2]=Dia
+        fechaAuditoriaStr = `${partes[2]}/${partes[1]}/${partes[0]}`; // Formato exacto DD/MM/AAAA
+    } else {
+        fechaAuditoriaStr = new Date().toLocaleDateString('es-AR');
+    }
 
     // Procesamos el listado completo de transacciones en orden cronológico inverso
     transaccionesGlobal.forEach(t => {
-        const monto = parseFloat(t.monto) || 0;
-        const fechaT = new Date(t.id);
-        const esMesEnCurso = fechaT.getMonth() === mesActualAño && fechaT.getFullYear() === añoActual;
-        const esHoy = new Date(t.id).toLocaleDateString('es-AR') === hoyStr;
+        let monto = parseFloat(t.monto) || 0;
+        let fechaT = new Date(t.id);
+        let esMesEnCurso = fechaT.getMonth() === mesActualAño && fechaT.getFullYear() === añoActual;
+        
+        // Comparamos cada transacción contra la fecha activa en la máquina del tiempo
+        let fechaMovimientoStr = new Date(t.id).toLocaleDateString('es-AR');
+        let esFechaAuditada = fechaMovimientoStr === fechaAuditoriaStr;
 
-        // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES ---
+        // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES (Se mantiene intacta) ---
         if (t.tipo === 'ingreso') {
             fondoTotalAcumulado += monto;
             if (esMesEnCurso) {
@@ -176,7 +241,7 @@ function procesarYRenderizarTodo() {
             }
         }
 
-        // --- LÓGICA DE LIQUIDEZ Y MEDIOS DE PAGO (DINERO REAL) ---
+        // --- LÓGICA DE LIQUIDEZ Y MEDIOS DE PAGO (Se mantiene intacta) ---
         if (t.tipo === 'ingreso') {
             if (t.medioPago === 'Mercado Pago') saldoMercadoPago += monto;
             else if (t.medioPago === 'Naranja X') saldoNaranjaX += monto;
@@ -190,14 +255,12 @@ function procesarYRenderizarTodo() {
             else if (t.medioPago === 'Banco Santander') saldoSantander -= monto;
             else if (t.medioPago === 'Efectivo') saldoEfectivoTotal -= monto;
         } else if (t.tipo === 'traspaso') {
-            // Restamos del Origen
             if (t.medioPago === 'Mercado Pago') saldoMercadoPago -= monto;
             else if (t.medioPago === 'Naranja X') saldoNaranjaX -= monto;
             else if (t.medioPago === 'Banco Galicia') saldoGalicia -= monto;
             else if (t.medioPago === 'Banco Santander') saldoSantander -= monto;
             else if (t.medioPago === 'Efectivo') saldoEfectivoTotal -= monto;
 
-            // Sumamos al Destino (t.medioDestino)
             if (t.medioDestino === 'Mercado Pago') saldoMercadoPago += monto;
             else if (t.medioDestino === 'Naranja X') saldoNaranjaX += monto;
             else if (t.medioDestino === 'Banco Galicia') saldoGalicia += monto;
@@ -205,16 +268,16 @@ function procesarYRenderizarTodo() {
             else if (t.medioDestino === 'Efectivo') saldoEfectivoTotal += monto;
         }
 
-        // --- LÓGICA DE CONTROL DIARIO (HOY) ---
-        if (esHoy) {
+        // --- LÓGICA DE CONTROL DIARIO RECALCULADA ---
+        // Al cambiar de fecha, acumula únicamente lo que entró/salió en el día auditado
+        if (esFechaAuditada) {
             if (t.tipo === 'ingreso') totalIngresosHoy += monto;
             if (t.tipo === 'gasto') totalGastosHoy += monto;
         }
     });
 
-    // PUNTO 2: Dinero Real Disponible es la suma de todas las disponibilidades líquidas reales
-    const dineroRealDisponible = saldoMercadoPago + saldoNaranjaX + saldoGalicia + saldoSantander + saldoEfectivoTotal;
-    const balanceNetoHoy = totalIngresosHoy - totalGastosHoy;
+    let dineroRealDisponible = saldoMercadoPago + saldoNaranjaX + saldoGalicia + saldoSantander + saldoEfectivoTotal;
+    let balanceNetoHoy = totalIngresosHoy - totalGastosHoy;
 
     // 2. Renderizado de las 3 Cards Tops Principales
     document.getElementById('total-global').innerHTML = `$${fondoTotalAcumulado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -228,13 +291,16 @@ function procesarYRenderizarTodo() {
     document.getElementById('saldo-nx').innerHTML = `$${saldoNaranjaX.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('saldo-efectivo').innerHTML = `$${saldoEfectivoTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Punto 4)
+    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Viajan en el tiempo con los montos recalculados)
     document.getElementById('mini-ingreso-hoy').innerHTML = `$${totalIngresosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('mini-gasto-hoy').innerHTML = `$${totalGastosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // 5. Dibujar la tabla de movimientos de hoy respetando filtros aplicados
-    renderizarTablaHoy(totalIngresosHoy, totalGastosHoy);
+    renderizarTablaHoy();
 }
+
+
+
 // CONTROL DE FILTROS EN EL DASHBOARD PRINCIPAL (TABLA DE HOY)
 function filtrarHoy(tipo) {
     filtroHoySeleccionado = tipo;
@@ -253,37 +319,47 @@ function filtrarHoy(tipo) {
 }
 
 // RENDERIZAR TABLA CORTA (MOVIMIENTOS DE HOY)
+// RENDERIZAR TABLA CORTA (MOVIMIENTOS DE HOY / NAVEGACIÓN TEMPORAL)
 function renderizarTablaHoy() {
     const tbody = document.getElementById('lista-hoy');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
-    const hoyStr = new Date().toLocaleDateString('es-AR');
+    // >>> MODIFICADO V2.1: Filtrado reactivo por la fecha seleccionada en el input <<<
+    let movimientosHoy = transaccionesGlobal.filter(t => {
+        const fechaT = new Date(t.id);
+        const desfasaje = fechaT.getTimezoneOffset() * 60000;
+        const fechaLocal = new Date(fechaT.getTime() - desfasaje);
+        const tFechaStr = fechaLocal.toISOString().split("T")[0]; // Obtiene "YYYY-MM-DD"
+        return tFechaStr === fechaFiltroDiario;
+    });
     
-    // Filtrar movimientos pertenecientes al día de hoy
-    let movimientosHoy = transaccionesGlobal.filter(t => new Date(t.id).toLocaleDateString('es-AR') === hoyStr);
-    
-    // Aplicar el filtro por tipo seleccionado en las pestañas del dashboard
+    // Aplicar el filtro por tipo seleccionado en las pestañas del dashboard (Mantiene tu lógica intacta)
     if (filtroHoySeleccionado !== 'todos') {
         movimientosHoy = movimientosHoy.filter(t => t.tipo === filtroHoySeleccionado);
     }
 
-    // PUNTO 4: Ocultar o mostrar las mini-cards de forma inteligente según la pestaña activa
+    // Ocultar o mostrar las mini-cards de forma inteligente según la pestaña activa (Mantiene tu lógica intacta)
     const cardIngreso = document.getElementById('mini-card-hoy-ingreso');
     const cardGasto = document.getElementById('mini-card-hoy-gasto');
 
     if (filtroHoySeleccionado === 'todos') {
-        cardIngreso.style.display = 'flex';
-        cardGasto.style.display = 'flex';
+        if (cardIngreso) cardIngreso.style.display = 'flex';
+        if (cardGasto) cardGasto.style.display = 'flex';
     } else if (filtroHoySeleccionado === 'ingreso') {
-        cardIngreso.style.display = 'flex';
-        cardGasto.style.display = 'none';
+        if (cardIngreso) cardIngreso.style.display = 'flex';
+        if (cardGasto) cardGasto.style.display = 'none';
     } else if (filtroHoySeleccionado === 'gasto') {
-        cardIngreso.style.display = 'none';
-        cardGasto.style.display = 'flex';
+        if (cardIngreso) cardIngreso.style.display = 'none';
+        if (cardGasto) cardGasto.style.display = 'flex';
     }
 
+    // Mensaje dinámico adaptado si no hay movimientos el día auditado
     if (movimientosHoy.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#7f8c8d;">No hay movimientos registrados hoy.</td></tr>`;
+        const mensajeFalta = fechaFiltroDiario === fechaHoySistemaStr 
+            ? "No hay movimientos registrados hoy." 
+            : "No hay movimientos registrados en esta fecha.";
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#7f8c8d;">${mensajeFalta}</td></tr>`;
         return;
     }
 
@@ -318,6 +394,7 @@ function renderizarTablaHoy() {
         tbody.appendChild(tr);
     });
 }
+
 
 // PUNTO 5: SÚPER FILTROS CRUZADOS Y PANEL DE TOTALES DINÁMICOS EN HISTORIAL
 function filtrarHistorial() {
