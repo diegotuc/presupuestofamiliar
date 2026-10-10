@@ -9,7 +9,6 @@ index.html
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- CONTENEDOR GLOBAL: Controla el ancho máximo y el centrado en cualquier pantalla -->
     <div class="dashboard-container">
         
         <header>
@@ -17,7 +16,7 @@ index.html
             <h2>Hogar Saltor Martínez</h2>
         </header>
 
-        <!-- Bloque de Balances Principales (Fuera del header para un centrado y responsive impecable) -->
+        <!-- Balances Principales -->
         <div class="contenedor-balances-top">
             <div class="balance-global">
                 <h3>Fondo Total Acumulado</h3>
@@ -29,89 +28,193 @@ index.html
             </div>
         </div>
 
-        <main class="dashboard-grid">
-            <!-- COLUMNA IZQUIERDA: Formulario y Totales Mensuales de Usuario -->
+        <!-- VISTA PRINCIPAL: DASHBOARD -->
+        <main class="dashboard-grid" id="vista-dashboard">
             <div class="columna-izquierda">
-                <section class="balances-individuales">
-                    <div class="card usuario-a">
-                        <h3>Mes Actual: Diego</h3>
-                        <p id="total-usuario-a">$0.00</p>
-                    </div>
-                    <div class="card usuario-b">
-                        <h3>Mes Actual: Romina</h3>
-                        <p id="total-usuario-b">$0.00</p>
-                    </div>
-                </section>
+                     <section class="balances-individuales">
+    <div class="card usuario-a">
+        <h3>Mes Actual: Diego</h3>
+        <p id="total-usuario-a">$0.00</p>
+    </div>
+    <div class="card usuario-b">
+        <h3>Mes Actual: Romina</h3>
+        <p id="total-usuario-b">$0.00</p>
+    </div>
+    <!-- NUEVA TARJETA: BILLETERAS DIGITALES -->
+    <div class="card card-billeteras">
+        <h3>Saldos Virtuales</h3>
+        <div class="sub-saldo">📱 MERCADOPAGO: <span id="saldo-mp">$0.00</span></div>
+        <div class="sub-saldo">🍊 NARANJA X: <span id="saldo-nx">$0.00</span></div>
+    </div>
+    <!-- NUEVA TARJETA: EFECTIVO TOTAL -->
+    <div class="card card-efectivo">
+        <h3>💵 Efectivo Total</h3>
+        <p id="saldo-efectivo">$0.00</p>
+    </div>
+</section>
 
                 <section class="formulario-movimiento">
-                    <h3>📝 Registrar Nuevo Movimiento</h3>
-                    <form id="form-transaccion">
-                        <div class="form-group">
-                            <label for="tipo">Tipo de Operación:</label>
-                            <select id="tipo" required>
-                                <option value="ingreso">Ingreso (Entrada de Dinero)</option>
-                                <option value="gasto">Gasto (Salida / Malgasto)</option>
-                            </select>
-                        </div>
+                    <h3 id="form-titulo">📝 Registrar Nuevo Movimiento</h3>
+                   <form id="form-transaccion">
+    <!-- Campo oculto para cuando estemos editando -->
+    <input type="hidden" id="edit-id">
 
-                        <div class="form-group">
-                            <label for="usuario">¿Quién realiza el movimiento?:</label>
-                            <select id="usuario" required>
-                                <option value="Diego">Diego</option>
-                                <option value="Romina">Romina</option>
-                            </select>
-                        </div>
+    <div class="form-group">
+        <label for="tipo">Tipo de Operación:</label>
+        <select id="tipo" onchange="alternarCamposPago()" required>
+            <option value="ingreso">Ingreso (Entrada de Dinero)</option>
+            <option value="gasto">Gasto (Salida / Malgasto)</option>
+            <option value="traspaso">🔄 Traspaso Interno (Mover dinero)</option>
+        </select>
+    </div>
 
-                        <div class="form-group">
-                            <label for="monto">Monto ($):</label>
-                            <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
-                        </div>
+    <div class="form-group">
+        <label for="usuario">¿Quién realiza el movimiento?:</label>
+        <select id="usuario" required>
+            <option value="Diego">Diego</option>
+            <option value="Romina">Romina</option>
+        </select>
+    </div>
 
-                        <div class="form-group">
-                            <label for="descripcion">Detalle, Origen o Concepto:</label>
-                            <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Nafta" required>
-                        </div>
+    <!-- Contenedor Origen (Sirve para Ingreso/Gasto habitual y como ORIGEN en traspasos) -->
+    <div class="form-group" id="contenedor-origen">
+        <label id="label-medio-pago" for="medio-pago">Medio de Depósito:</label>
+        <select id="medio-pago" onchange="alternarUbicacionEfectivo()" required>
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Naranja X">🍊 Naranja X</option>
+            <option value="Banco Galicia">🦁 Banco Galicia</option>
+            <option value="Banco Santander">🔴 Banco Santander</option>
+            <option value="Efectivo">💵 Efectivo</option>
+        </select>
+    </div>
 
-                        <button type="submit" class="btn-guardar">Guardar Movimiento</button>
-                    </form>
+    <!-- Campo Dinámico para Efectivo Origen -->
+    <div class="form-group" id="contenedor-ubicacion-efectivo" style="display: none;">
+        <label for="ubicacion-efectivo">¿Dónde está/estaba el dinero físico?:</label>
+        <input type="text" id="ubicacion-efectivo" placeholder="Ej: Billetera, mesita de luz">
+    </div>
+
+    <!-- NUEVO: Contenedor Destino (Solo visible si es TRASPASO) -->
+    <div class="form-group" id="contenedor-destino" style="display: none;">
+        <label for="medio-destino">¿Hacia dónde se mueve el dinero? (Destino):</label>
+        <select id="medio-destino" onchange="alternarUbicacionEfectivoDestino()">
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Naranja X">🍊 Naranja X</option>
+            <option value="Banco Galicia">🦁 Banco Galicia</option>
+            <option value="Banco Santander">🔴 Banco Santander</option>
+            <option value="Efectivo">💵 Efectivo</option>
+        </select>
+    </div>
+
+    <!-- NUEVO: Campo Dinámico para Efectivo Destino -->
+    <div class="form-group" id="contenedor-ubicacion-efectivo-destino" style="display: none;">
+        <label for="ubicacion-efectivo-destino">¿A qué lugar físico va el efectivo?:</label>
+        <input type="text" id="ubicacion-efectivo-destino" placeholder="Ej: Cuenta de luz, Billetera">
+    </div>
+
+    <div class="form-group">
+        <label for="monto">Monto ($):</label>
+        <input type="number" id="monto" step="0.01" min="0.01" placeholder="Ej: 25000" required>
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Detalle, Origen o Concepto:</label>
+        <input type="text" id="descripcion" placeholder="Ej: Sueldo, Supermercado, Traspaso a MP" required>
+    </div>
+
+    <div class="botones-formulario">
+        <button type="submit" class="btn-guardar" id="btn-submit-form">Guardar Movimiento</button>
+        <button type="button" class="btn-cancelar" id="btn-cancelar-edit" style="display: none;" onclick="cancelarEdicion()">Cancelar Edición</button>
+    </div>
+</form>
+
                 </section>
             </div>
 
-            <!-- COLUMNA DERECHA: Card del Historial Autocontenido con Pestañas -->
+            <!-- COLUMNA DERECHA: Resumen del Día y Acceso al Historial -->
             <div class="columna-derecha">
+                <section class="card-resumen-hoy">
+                    <div class="resumen-hoy-cabecera">
+                        <h3>📅 Movimientos de Hoy</h3>
+                        <button class="btn-navegacion" onclick="navegarA('historial')">🔍 Ver Historial Completo →</button>
+                    </div>
+                    
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Miembro</th>
+                                    <th>Detalle</th>
+                                    <th>Medio / Ubicación</th>
+                                    <th>Monto</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-hoy">
+                                <!-- Se rellena dinámicamente con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- VISTA APARTE: HISTORIAL COMPLETO (Oculto por defecto) -->
+        <main class="dashboard-grid" id="vista-historial" style="display: none;">
+            <div class="columna-completa">
                 <section class="card-historial">
                     <div class="historial-cabecera">
-                        <h3>📜 Panel de Registros</h3>
+                        <div class="historial-titulo-bloque">
+                            <button class="btn-volver" onclick="navegarA('dashboard')">← Volver al Panel</button>
+                            <h3>📜 Panel Histórico de Registros</h3>
+                        </div>
                         <div class="pestanas-filtros">
-                            <button class="btn-tab activo" id="tab-hoy" onclick="cambiarFiltro('hoy')">Hoy</button>
                             <button class="btn-tab" id="tab-mes" onclick="cambiarFiltro('mes')">Mes En Curso</button>
                             <button class="btn-tab" id="tab-archivo" onclick="cambiarFiltro('archivo')">Archivo Histórico</button>
                         </div>
                     </div>
 
-                    <!-- Selector de meses archivados (solo visible en modo archivo) -->
+                    <!-- Buscador Avanzado y Filtros por Medio de Pago -->
+                    <div class="barra-busqueda-filtros">
+                        <div class="filtro-item">
+                            <label for="buscar-texto">Buscar por Detalle:</label>
+                            <input type="text" id="buscar-texto" placeholder="Ej: Nafta..." oninput="filtrarHistorial()">
+                        </div>
+                        <div class="filtro-item">
+                            <label for="filtro-medio">Filtrar por Medio de Pago:</label>
+                            <select id="filtro-medio" onchange="filtrarHistorial()">
+                                <option value="todos">🔹 Todos los medios</option>
+                                <option value="Mercado Pago">📱 Mercado Pago</option>
+                                <option value="Naranja X">🍊 Naranja X</option>
+                                <option value="Banco Galicia">🦁 Banco Galicia</option>
+                                <option value="Banco Santander">🔴 Banco Santander</option>
+                                <option value="Efectivo">💵 Efectivo (Cualquier lugar)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Selector de meses archivados -->
                     <div id="contenedor-selector-archivo" class="selector-archivo-oculto">
                         <label for="selector-meses">Seleccionar Mes Pasado:</label>
                         <select id="selector-meses" onchange="cargarMesArchivado()"></select>
                     </div>
 
-                    <!-- Botones de Acción según la vista activa -->
                     <div class="acciones-historial">
                         <button id="btn-exportar" class="btn-accion btn-excel" onclick="exportarExcel()">📥 Descargar Excel</button>
                         <button id="btn-cerrar-mes" class="btn-accion btn-cierre" onclick="ejecutarCierreMensual()">🔒 Archivar y Cerrar Mes</button>
                     </div>
 
-                    <!-- Tabla con contenedor scrollable interno -->
-                    <div class="tabla-contenedor">
+                    <div class="tabla-contenedor contenedor-tabla-historial">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Miembro</th>
                                     <th>Detalle</th>
+                                    <th>Medio / Ubicación</th>
                                     <th>Tipo</th>
                                     <th>Monto</th>
-                                    <th>Acción</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="lista-transacciones"></tbody>
@@ -121,13 +224,11 @@ index.html
             </div>
         </main>
 
-    </div> <!-- Fin .dashboard-container -->
+    </div>
 
     <script src="app.js"></script>
 </body>
 </html>
-
-
 
 style.css
 
@@ -214,18 +315,19 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
 }
 
 /* Tarjetas e Inputs generales */
-.card-historial, .formulario-movimiento {
+.card-historial, .formulario-movimiento, .card-resumen-hoy {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
+/* --- Ajuste para la cuadrícula de 4 tarjetas --- */
 .balances-individuales {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Crea 2 columnas perfectas */
     gap: 15px;
     margin-bottom: 20px;
-    flex-wrap: nowrap; /* En PC se mantienen firmes lado a lado */
     width: 100%;
 }
 
@@ -234,11 +336,27 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     border-radius: 12px;
     padding: 15px 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    flex: 1 1 50%; /* Mitad de espacio para Diego y Romina */
     text-align: center; 
     border-left: 5px solid #ccc; 
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
+
+.card.card-billeteras { border-left-color: #2ecc71; }
+.card.card-efectivo { border-left-color: #f1c40f; }
+
+.sub-saldo {
+    font-size: 1.05rem;
+    font-weight: bold;
+    margin-top: 5px;
+    color: var(--primary-color);
+}
+.sub-saldo span {
+    color: #2c3e50;
+}
+
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
 .card h3 { margin: 0; font-size: 0.85rem; color: #7f8c8d; }
@@ -250,13 +368,31 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem;
 }
 
+.botones-formulario {
+    display: flex;
+    gap: 10px;
+}
+
 .btn-guardar {
     width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s;
 }
 .btn-guardar:hover { background-color: #1a252f; }
 
-/* Panel de Registros */
-.historial-cabecera {
+.btn-cancelar {
+    width: 100%;
+    padding: 12px;
+    background-color: #e2e8f0;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-cancelar:hover { background-color: #cbd5e1; }
+
+/* Panel de Registros e Historial */
+.historial-cabecera, .resumen-hoy-cabecera {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -266,7 +402,12 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     flex-wrap: wrap;
     gap: 10px;
 }
-.historial-cabecera h3 { margin: 0; }
+.historial-cabecera h3, .resumen-hoy-cabecera h3 { margin: 0; }
+
+.historial-titulo-bloque {
+    display: flex;
+    align-items: center;
+}
 
 .pestanas-filtros { display: flex; gap: 5px; }
 .btn-tab {
@@ -281,7 +422,61 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     min-width: 120px;
 }
 .btn-excel { background-color: #27ae60; color: white; }
+.btn-excel:hover { background-color: #219653; }
 .btn-cierre { background-color: #f39c12; color: white; }
+.btn-cierre:hover { background-color: #d68910; }
+
+.btn-navegacion {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-navegacion:hover { background-color: #2980b9; }
+
+.btn-volver {
+    background-color: #7f8c8d;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 15px;
+}
+.btn-volver:hover { background-color: #95a5a6; }
+
+/* Buscador Avanzado y Filtros por Medio de Pago */
+.barra-busqueda-filtros {
+    display: flex;
+    gap: 15px;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    border: 1px solid #e2e8f0;
+}
+
+.filtro-item {
+    flex: 1 1 200px;
+}
+.filtro-item label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+.filtro-item input, .filtro-item select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
 
 /* ==========================================
    TABLA CON AJUSTE DE TEXTO AUTOMÁTICO (ESTILO EXCEL)
@@ -295,291 +490,153 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     width: 100%;
 }
 
+.contenedor-tabla-historial {
+    max-height: 600px;
+}
+
 table { 
     width: 100%; 
     border-collapse: collapse; 
     text-align: left; 
     font-size: 0.9rem;
-    table-layout: fixed; /* Mantiene las columnas firmes según los anchos fijos de abajo */
+    table-layout: fixed; /* Mantiene las columnas firmes según los anchos definidos */
 }
 
 thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #e2e8f0; }
 th, td { 
     padding: 12px 10px; 
     border-bottom: 1px solid #edf2f7; 
-    vertical-align: middle; /* Alineación vertical prolija */
+    vertical-align: middle; 
 }
 
-/* Definición de anchos fijos para mantener estructura controlada en PC */
-table th:nth-child(1), table td:nth-child(1) { width: 95px; white-space: nowrap; }  /* Fecha */
-table th:nth-child(2), table td:nth-child(2) { width: 85px; white-space: nowrap; }  /* Miembro */
-table th:nth-child(4), table td:nth-child(4) { width: 85px; white-space: nowrap; }  /* Tipo */
-table th:nth-child(5), table td:nth-child(5) { width: 105px; white-space: nowrap; } /* Monto */
-table th:nth-child(6), table td:nth-child(6) { width: 65px; text-align: center; }   /* Acción */
-
-/* EFECTO EXCEL: La columna Detalle se estira hacia abajo si el texto es muy largo */
-table th:nth-child(3), table td:nth-child(3) { 
-    width: auto; 
-    white-space: normal;       /* ¡AQUÍ ESTÁ EL TRUCO!: Permite saltos de línea */
-    word-break: break-word;    /* Corta palabras extremadamente largas si es necesario */
+/* --- Control Exacto de Columnas para evitar Scroll Horizontal --- */
+/* Tabla Corta (Resumen de Hoy) */
+#lista-hoy td, #vista-dashboard table th {
+    white-space: nowrap;
+}
+#lista-hoy td:nth-child(2), #vista-dashboard table th:nth-child(2) { 
+    white-space: normal;       /* Ajuste automático estilo Excel */
+    word-break: break-word;    
     overflow-wrap: break-word;
 }
+
+/* Tabla Larga (Historial Completo) */
+#lista-transacciones td, #vista-historial table th {
+    white-space: nowrap;
+}
+#lista-transacciones td:nth-child(3), #vista-historial table th:nth-child(3) { 
+    white-space: normal;       /* Ajuste automático estilo Excel */
+    word-break: break-word;    
+    overflow-wrap: break-word;
+}
+
+/* Seteo de Anchos Fijos Proporcionales para PC */
+#vista-dashboard table th:nth-child(1) { width: 85px; }  /* Miembro */
+#vista-dashboard table th:nth-child(2) { width: auto; }  /* Detalle (Elástico) */
+#vista-dashboard table th:nth-child(3) { width: 140px; } /* Medio/Ubicación */
+#vista-dashboard table th:nth-child(4) { width: 105px; } /* Monto */
+#vista-dashboard table th:nth-child(5) { width: 85px; }  /* Acciones */
+
+#vista-historial table th:nth-child(1) { width: 95px; }  /* Fecha */
+#vista-historial table th:nth-child(2) { width: 85px; }  /* Miembro */
+#vista-historial table th:nth-child(3) { width: auto; }  /* Detalle (Elástico) */
+#vista-historial table th:nth-child(4) { width: 140px; } /* Medio/Ubicación */
+#vista-historial table th:nth-child(5) { width: 85px; }  /* Tipo */
+#vista-historial table th:nth-child(6) { width: 105px; } /* Monto */
+#vista-historial table th:nth-child(7) { width: 85px; }  /* Acciones */
 
 .txt-ingreso { color: var(--ingreso-color); font-weight: bold; }
 .txt-gasto { color: var(--gasto-color); font-weight: bold; }
 .btn-borrar { background: none; border: none; cursor: pointer; font-size: 1rem; }
+.btn-editar { background: none; border: none; cursor: pointer; font-size: 1rem; margin-right: 5px; }
 
 .selector-archivo-oculto { display: none; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 .selector-archivo-visible { display: block; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 
+.columna-completa {
+    grid-column: 1 / -1;
+    width: 100%;
+}
 
 /* ==========================================
    MEDIA QUERIES (Alineación elástica en celulares)
    ========================================== */
+
+/* ==========================================
+   MEDIA QUERIES (100% Sin Scroll - Formato Tarjeta para Móviles)
+   ========================================== */
 @media (max-width: 900px) {
     .dashboard-grid { 
-        grid-template-columns: 1fr; /* Colapsa a 1 columna vertical en móvil */
+        grid-template-columns: 1fr; /* Una columna vertical en móvil */
     }
     
     .balances-individuales {
-        flex-wrap: wrap; /* Tarjetas de Diego y Romina van una abajo de la otra en celular */
+        flex-wrap: wrap; /* Tarjetas de Diego y Romina en vertical */
     }
     
     .card {
         flex: 1 1 140px;
     }
 
-    /* En celulares permitimos que la tabla fluya de forma nativa para evitar que las celdas queden super altas */
-    table { table-layout: auto; }
-    table th:nth-child(3), table td:nth-child(3) { white-space: nowrap; }
-}
+    /* Ocultamos los encabezados de la tabla (Fecha, Miembro, etc.) porque ya no se leen en columnas */
+    thead {
+        display: none;
+    }
 
+    /* Convertimos la tabla y el cuerpo en bloques flexibles */
+    table, tbody, tr, td {
+        display: block;
+        width: 100%;
+    }
 
+    /* Cada fila ahora es una tarjeta independiente */
+    tr {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        box-sizing: border-box;
+    }
 
-app.js
+    /* Ajustamos cada celda para que se alinee de forma compacta */
+    td {
+        border: none !important;
+        padding: 4px 0 !important;
+        white-space: normal !important;
+        font-size: 0.95rem !important; /* Tipografía cómoda y legible */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-// Variable de Estado del Filtro Activo: 'hoy', 'mes', o 'archivo'
-let filtroActivo = 'hoy';
-let mesSeleccionadoArchivo = '';
+    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL DASHBOARD (TABLA CORTA) --- */
+    #lista-hoy tr td:nth-child(1)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(2)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(3)::before { content: "💳 Medio:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(4)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
+    #lista-hoy tr td:nth-child(5)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
 
-document.addEventListener("DOMContentLoaded", () => {
-    inicializarArchivo();
-    cargarMovimientos();
-});
+    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL HISTORIAL (TABLA LARGA) --- */
+    #lista-transacciones tr td:nth-child(1)::before { content: "📅 Fecha:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(2)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(3)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(4)::before { content: "💳 Medio:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(5)::before { content: "🔄 Tipo:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(6)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
+    #lista-transacciones tr td:nth-child(7)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
 
-const formTransaccion = document.getElementById("form-transaccion");
-
-// 1. REGISTRAR MOVIMIENTO (POST)
-if (formTransaccion) {
-    formTransaccion.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const hoy = new Date();
-        const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
-        const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
-
-        const movimiento = {
-            id: Date.now(),
-            fecha: fechaFormateada,
-            llaveMes: llaveMesActual,
-            tipo: document.getElementById("tipo").value,
-            usuario: document.getElementById("usuario").value, 
-            monto: parseFloat(document.getElementById("monto").value),
-            descripcion: document.getElementById("descripcion").value
-        };
-
-        try {
-            // USAR RUTA RELATIVA LIMPIA
-            const res = await fetch('/api/server', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(movimiento)
-            });
-
-            if (res.ok) {
-                formTransaccion.reset();
-                cargarMovimientos();
-            } else {
-                alert("Error en el servidor al guardar.");
-            }
-        } catch (error) {
-            console.error("Error al registrar movimiento:", error);
-        }
-    });
-}
-
-// 2. CARGAR MOVIMIENTOS (GET)
-async function cargarMovimientos() {
-    try {
-        // USAR RUTA RELATIVA LIMPIA
-        const res = await fetch('/api/server');
-        const datos = await res.json();
-        const movimientosMesActual = datos.movimientos || [];
-        
-        actualizarTodosLosBalances(movimientosMesActual);
-        procesarYRenderizarTabla(movimientosMesActual);
-    } catch (error) {
-        console.error("Error al cargar los movimientos:", error);
+    /* Destacar el texto de la izquierda en las etiquetas automáticas */
+    td::before {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 }
 
-// 3. ELIMINAR MOVIMIENTO (DELETE)
-async function eliminarMovimiento(id) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este movimiento?")) return;
-    
-    try {
-        // USAR RUTA RELATIVA LIMPIA
-        const res = await fetch(`/api/server?id=${id}`, {
-            method: 'DELETE'
-        });
 
-        if (res.ok) {
-            cargarMovimientos();
-        } else {
-            alert("No se pudo eliminar el movimiento.");
-        }
-    } catch (error) {
-        console.error("Error al eliminar movimiento:", error);
-    }
-}
-
-function actualizarTodosLosBalances(movimientosMesActual) {
-    const hoyStr = obtenerFechaHoyString();
-    let acumuladoGlobal = 0;
-    
-    const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-    Object.values(archivoHistorico).forEach(listaMes => {
-        listaMes.forEach(mov => {
-            acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        });
-    });
-
-    movimientosMesActual.forEach(mov => {
-        acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-    });
-
-    let acumuladoDiario = 0;
-    movimientosMesActual.filter(mov => mov.fecha === hoyStr).forEach(mov => {
-        acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-    });
-
-    let acumuladoDiego = 0;
-    let acumuladoRomina = 0;
-    movimientosMesActual.forEach(mov => {
-        if (mov.usuario === 'Diego') acumuladoDiego += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-    });
-
-    if(document.getElementById("total-global")) document.getElementById("total-global").innerText = formatMoneda(acumuladoGlobal);
-    if(document.getElementById("total-diario")) document.getElementById("total-diario").innerText = formatMoneda(acumuladoDiario);
-    if(document.getElementById("total-usuario-a")) document.getElementById("total-usuario-a").innerText = formatMoneda(acumuladoDiego);
-    if(document.getElementById("total-usuario-b")) document.getElementById("total-usuario-b").innerText = formatMoneda(acumuladoRomina);
-}
-
-function procesarYRenderizarTabla(movimientosMesActual) {
-    let movimientosAMostrar = [];
-    const btnCerrarMes = document.getElementById("btn-cerrar-mes");
-    const divSelectorArchivo = document.getElementById("contenedor-selector-archivo");
-
-    if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-oculto";
-    if (btnCerrarMes) btnCerrarMes.style.display = "none";
-
-    if (filtroActivo === 'hoy') {
-        const hoyStr = obtenerFechaHoyString();
-        movimientosAMostrar = movimientosMesActual.filter(mov => mov.fecha === hoyStr);
-    } 
-    else if (filtroActivo === 'mes') {
-        movimientosAMostrar = movimientosMesActual;
-        if (btnCerrarMes) btnCerrarMes.style.display = "block";
-    } 
-    else if (filtroActivo === 'archivo') {
-        if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-visible";
-        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-        movimientosAMostrar = archivoHistorico[mesSeleccionadoArchivo] || [];
-    }
-
-    renderizarFilasTabla(movimientosAMostrar);
-}
-
-function renderizarFilasTabla(movimientos) {
-    const listaContenedor = document.getElementById("lista-transacciones");
-    if (!listaContenedor) return;
-    
-    listaContenedor.innerHTML = ""; 
-
-    if (movimientos.length === 0) {
-        listaContenedor.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#7f8c8d;">No hay movimientos registrados para este período.</td></tr>`;
-        return;
-    }
-
-    movimientos.forEach(mov => {
-        const tr = document.createElement("tr");
-        const celdaAccion = (filtroActivo === 'archivo') 
-            ? `<td>🔒 Archivo</td>` 
-            : `<td><button class="btn-borrar" onclick="eliminarMovimiento(${mov.id})">❌</button></td>`;
-
-        tr.innerHTML = `
-            <td>${mov.fecha}</td>
-            <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
-            <td>${mov.descripcion}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">${mov.tipo.toUpperCase()}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : 'txt-gasto'}">
-                ${mov.tipo === 'ingreso' ? '+' : '-'}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </td>
-            ${celdaAccion}
-        `;
-        listaContenedor.appendChild(tr);
-    });
-}
-
-// Cambiar de Pestaña de Filtros
-function cambiarFiltro(nuevoFiltro) {
-    filtroActivo = nuevoFiltro;
-    document.querySelectorAll(".btn-tab").forEach(btn => btn.classList.remove("activo"));
-    const tabBtn = document.getElementById(`tab-${nuevoFiltro}`);
-    if (tabBtn) tabBtn.classList.add("activo");
-    cargarMovimientos();
-}
-
-// Cierre Mensual
-function ejecutarCierreMensual() {
-    const datosGuardados = localStorage.getItem('mis_movimientos');
-    const movimientos = datosGuardados ? JSON.parse(datosGuardados) : [];
-
-    if (movimientos.length === 0) {
-        alert("No hay movimientos en el mes actual para cerrar.");
-        return;
-    }
-
-    const fechaRef = movimientos[0].llaveMes || obtenerLlaveMesActualString();
-    
-    if (confirm(`¿Estás seguro de cerrar el período de este mes (${fechaRef})?\nSe archivará de manera definitiva.`)) {
-        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-        archivoHistorico[fechaRef] = movimientos;
-        localStorage.setItem('archivo_historico', JSON.stringify(archivoHistorico));
-        localStorage.setItem('mis_movimientos', JSON.stringify([]));
-        alert(`Período ${fechaRef} cerrado con éxito.`);
-        cambiarFiltro('hoy');
-    }
-}
-
-function inicializarArchivo() {
-    if (!localStorage.getItem('archivo_historico')) {
-        localStorage.setItem('archivo_historico', JSON.stringify({}));
-    }
-}
-
-function obtenerFechaHoyString() {
-    const hoy = new Date();
-    return `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
-}
-
-function formatMoneda(valor) {
-    if (typeof valor !== 'number') valor = parseFloat(valor) || 0;
-    return (valor >= 0 ? '' : '-') + '\$' + Math.abs(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-packaje.json
+package.json
 
 {
   "name": "control-presupuesto",
@@ -603,7 +660,6 @@ packaje.json
     "mongoose": "^9.11.0"
   }
 }
-
 
 /api/server.js
 
@@ -700,5 +756,3 @@ app.use((req, res, next) => {
 app.listen(PORT, () => {
     console.log(`==> Servidor corriendo en el puerto ${PORT}`);
 });
-
-

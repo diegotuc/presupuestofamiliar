@@ -6,6 +6,7 @@
     --ingreso-color: #2ecc71;
     --gasto-color: #e74c3c;
     --accent-color: #3498db;
+    --real-color: #e67e22; /* Color naranja elegante para el dinero real */
 }
 
 * {
@@ -22,7 +23,7 @@ body {
 
 .dashboard-container {
     width: 100%;
-    max-width: 1350px; /* Un poco más amplio para que la tabla respire excelente en PC */
+    max-width: 1350px; /* Amplio para que la tabla respire excelente en PC */
     margin: 0 auto;
 }
 
@@ -38,10 +39,11 @@ header {
 header h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
 header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
 
+/* Balances Top Reorganizados en 3 Columnas */
 .contenedor-balances-top {
     display: flex;
     justify-content: center;
-    align-items: center;    
+    align-items: stretch; /* Mantiene la misma altura en todas las tarjetas */
     gap: 20px;
     margin-top: 15px;
     margin-bottom: 25px;
@@ -49,31 +51,80 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     width: 100%;            
 }
 
-.balance-global, .balance-diario {
+.balance-global, .balance-real, .balance-diario {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    padding: 15px 30px;
+    font-weight: bold;
+    text-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.8);
+    padding: 15px 20px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    flex: 1 1 280px;       
-    max-width: 360px;      
+    flex: 1 1 250px;       
+    max-width: 380px;      
     box-sizing: border-box;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/*.balance-real {
+    background: linear-gradient(135deg, #d35400, #e67e22);
 }
 
 .balance-diario {
     background: linear-gradient(135deg, #16a085, #2ce6a4);
+}*/
+
+/* REEMPLAZAR ESTE BLOQUE EN TU STYLE.CSS PARA ARREGLAR EL CONTRASTE */
+.balance-real {
+    /* Degradado naranja oscuro / marrón cobrizo para un contraste perfecto */
+    /*background: linear-gradient(135deg, #a04000, #dc7633);*/
+    background: linear-gradient(135deg, #d35400, #e67e22);
+    color: white;
+    font-weight: bolder;
+    text-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.8);
 }
 
-.balance-global h3, .balance-diario h3 { margin: 0; font-size: 0.9rem; opacity: 0.9; }
-.balance-global p, .balance-diario p { margin: 5px 0 0 0; font-size: 1.7rem; font-weight: bold; }
+.balance-diario {
+    /* Degradado verde pino / esmeralda oscuro para resaltar las letras blancas */
+    /*background: linear-gradient(135deg, #117a65, #1abc9c);*/
+    background: linear-gradient(135deg, #16a085, #2ce6a4);
+    color: white;
+    font-weight: bolder;
+    text-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.8);
+}
+
+
+.balance-global h3, .balance-real h3, .balance-diario h3 { 
+    margin: 0; 
+    font-size: 0.9rem; 
+    opacity: 0.9; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.balance-global p, .balance-real p, .balance-diario p { 
+    margin: 5px 0; 
+    font-size: 1.6rem; 
+    font-weight: bold; 
+}
+
+/* Letra chica aclaratoria para las cards principales */
+.card-aclaracion {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    font-style: italic;
+    margin-top: 4px;
+    display: block;
+    line-height: 1.2;
+}
 
 /* ==========================================
    ESTRUCTURA DE GRID (PC - 2 COLUMNAS)
    ========================================== */
 .dashboard-grid {
     display: grid;
-    /* Columna izquierda robusta de 380px para dar presencia al formulario y tarjetas */
     grid-template-columns: 380px 1fr;
     gap: 25px;
     width: 100%;
@@ -88,10 +139,9 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-/* --- Ajuste para la cuadrícula de 4 tarjetas --- */
 .balances-individuales {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Crea 2 columnas perfectas */
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
     margin-bottom: 20px;
     width: 100%;
@@ -119,9 +169,6 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     margin-top: 5px;
     color: var(--primary-color);
 }
-.sub-saldo span {
-    color: #2c3e50;
-}
 
 .card.usuario-a { border-left-color: #3498db; }
 .card.usuario-b { border-left-color: #9b59b6; }
@@ -134,10 +181,7 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem;
 }
 
-.botones-formulario {
-    display: flex;
-    gap: 10px;
-}
+.botones-formulario { display: flex; gap: 10px; }
 
 .btn-guardar {
     width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s;
@@ -145,19 +189,10 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
 .btn-guardar:hover { background-color: #1a252f; }
 
 .btn-cancelar {
-    width: 100%;
-    padding: 12px;
-    background-color: #e2e8f0;
-    color: #475569;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: bold;
+    width: 100%; padding: 12px; background-color: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold;
 }
 .btn-cancelar:hover { background-color: #cbd5e1; }
-
-/* Panel de Registros e Historial */
+/* Cabeceras de paneles y bloques de navegación */
 .historial-cabecera, .resumen-hoy-cabecera {
     display: flex;
     justify-content: space-between;
@@ -166,26 +201,52 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
     padding-bottom: 15px;
     margin-bottom: 15px;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
 }
 .historial-cabecera h3, .resumen-hoy-cabecera h3 { margin: 0; }
 
-.historial-titulo-bloque {
+.historial-titulo-bloque, .cabecera-hoy-titulo-bloque {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
 }
 
-.pestanas-filtros { display: flex; gap: 5px; }
-.btn-tab {
-    padding: 8px 14px; border: none; background-color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s;
+/* Pestañas de Filtros Inteligentes (Dashboard e Historial) */
+.pestanas-filtros, .filtros-hoy-pestanas { display: flex; gap: 5px; }
+
+.btn-tab, .btn-tab-hoy {
+    padding: 6px 12px; border: none; background-color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: all 0.2s; color: #475569;
 }
 .btn-tab.activo { background-color: var(--accent-color); color: white; }
+.btn-tab-hoy.activo { background-color: var(--primary-color); color: white; }
 
+/* Contenedor y Diseño de Mini-Cards Diarias */
+.contenedor-mini-cards-hoy {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.mini-card-hoy {
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-width: 110px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    border-left: 4px solid #ccc;
+}
+.mini-card-hoy.ingreso { background-color: #e8f8f5; border-left-color: var(--ingreso-color); }
+.mini-card-hoy.gasto { background-color: #fdf2f2; border-left-color: var(--gasto-color); }
+
+.mini-label { font-size: 0.75rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
+.mini-monto { font-size: 1.05rem; font-weight: bold; color: var(--primary-color); margin-top: 2px; }
+
+/* Acciones Generales e Historial */
 .acciones-historial { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
 .btn-accion {
-    padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
-    flex: 1; 
-    min-width: 120px;
+    padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; flex: 1; min-width: 120px;
 }
 .btn-excel { background-color: #27ae60; color: white; }
 .btn-excel:hover { background-color: #219653; }
@@ -193,123 +254,91 @@ header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: #566573; }
 .btn-cierre:hover { background-color: #d68910; }
 
 .btn-navegacion {
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
+    background-color: var(--accent-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;
 }
 .btn-navegacion:hover { background-color: #2980b9; }
 
 .btn-volver {
-    background-color: #7f8c8d;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-right: 15px;
+    background-color: #7f8c8d; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;
 }
 .btn-volver:hover { background-color: #95a5a6; }
 
-/* Buscador Avanzado y Filtros por Medio de Pago */
+/* Barra de Búsqueda y Filtros en Grid de 4 Columnas para PC */
 .barra-busqueda-filtros {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
     background-color: #f8fafc;
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 15px;
-    flex-wrap: wrap;
     border: 1px solid #e2e8f0;
 }
 
-.filtro-item {
-    flex: 1 1 200px;
-}
-.filtro-item label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin-bottom: 5px;
-}
-.filtro-item input, .filtro-item select {
+.filtro-item { width: 100%; }
+.filtro-item label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; }
+.filtro-item input, .filtro-item select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
+
+/* Cinta de Totales Dinámicos Inteligentes en Historial */
+.contenedor-totales-dinamicos {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
     width: 100%;
-    padding: 8px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
 }
+
+.total-bloque {
+    flex: 1 1 200px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    border-left: 5px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.total-bloque.neto { border-left-color: var(--accent-color); }
+.total-bloque.ingresos { border-left-color: var(--ingreso-color); background-color: #f4fbf7; }
+.total-bloque.gastos { border-left-color: var(--gasto-color); background-color: #fdf5f5; }
+
+.total-titulo { font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
+.total-valor { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-top: 4px; }
 
 /* ==========================================
-   TABLA CON AJUSTE DE TEXTO AUTOMÁTICO (ESTILO EXCEL)
+   TABLA CON AJUSTE ESTILO EXCEL
    ========================================== */
 .tabla-contenedor {
-    max-height: 520px;
-    overflow-y: auto;
-    overflow-x: auto; 
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    width: 100%;
+    max-height: 520px; overflow-y: auto; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; width: 100%;
 }
+.contenedor-tabla-historial { max-height: 600px; }
 
-.contenedor-tabla-historial {
-    max-height: 600px;
-}
-
-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    text-align: left; 
-    font-size: 0.9rem;
-    table-layout: fixed; /* Mantiene las columnas firmes según los anchos definidos */
-}
-
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; table-layout: fixed; }
 thead { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #e2e8f0; }
-th, td { 
-    padding: 12px 10px; 
-    border-bottom: 1px solid #edf2f7; 
-    vertical-align: middle; 
-}
+th, td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
 
-/* --- Control Exacto de Columnas para evitar Scroll Horizontal --- */
-/* Tabla Corta (Resumen de Hoy) */
-#lista-hoy td, #vista-dashboard table th {
-    white-space: nowrap;
-}
-#lista-hoy td:nth-child(2), #vista-dashboard table th:nth-child(2) { 
-    white-space: normal;       /* Ajuste automático estilo Excel */
-    word-break: break-word;    
-    overflow-wrap: break-word;
-}
+/* Control de Textos Largos */
+#lista-hoy td, #vista-dashboard table th { white-space: nowrap; }
+#lista-hoy td:nth-child(2), #vista-dashboard table th:nth-child(2) { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
 
-/* Tabla Larga (Historial Completo) */
-#lista-transacciones td, #vista-historial table th {
-    white-space: nowrap;
-}
-#lista-transacciones td:nth-child(3), #vista-historial table th:nth-child(3) { 
-    white-space: normal;       /* Ajuste automático estilo Excel */
-    word-break: break-word;    
-    overflow-wrap: break-word;
-}
+#lista-transacciones td, #vista-historial table th { white-space: nowrap; }
+#lista-transacciones td:nth-child(3), #vista-historial table th:nth-child(3) { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
 
-/* Seteo de Anchos Fijos Proporcionales para PC */
-#vista-dashboard table th:nth-child(1) { width: 85px; }  /* Miembro */
-#vista-dashboard table th:nth-child(2) { width: auto; }  /* Detalle (Elástico) */
-#vista-dashboard table th:nth-child(3) { width: 140px; } /* Medio/Ubicación */
-#vista-dashboard table th:nth-child(4) { width: 105px; } /* Monto */
-#vista-dashboard table th:nth-child(5) { width: 85px; }  /* Acciones */
+/* Anchos Fijos de Columnas */
+#vista-dashboard table th:nth-child(1) { width: 85px; }
+#vista-dashboard table th:nth-child(2) { width: auto; }
+#vista-dashboard table th:nth-child(3) { width: 140px; }
+#vista-dashboard table th:nth-child(4) { width: 105px; }
+#vista-dashboard table th:nth-child(5) { width: 85px; }
 
-#vista-historial table th:nth-child(1) { width: 95px; }  /* Fecha */
-#vista-historial table th:nth-child(2) { width: 85px; }  /* Miembro */
-#vista-historial table th:nth-child(3) { width: auto; }  /* Detalle (Elástico) */
-#vista-historial table th:nth-child(4) { width: 140px; } /* Medio/Ubicación */
-#vista-historial table th:nth-child(5) { width: 85px; }  /* Tipo */
-#vista-historial table th:nth-child(6) { width: 105px; } /* Monto */
-#vista-historial table th:nth-child(7) { width: 85px; }  /* Acciones */
+#vista-historial table th:nth-child(1) { width: 95px; }
+#vista-historial table th:nth-child(2) { width: 85px; }
+#vista-historial table th:nth-child(3) { width: auto; }
+#vista-historial table th:nth-child(4) { width: 140px; }
+#vista-historial table th:nth-child(5) { width: 85px; }
+#vista-historial table th:nth-child(6) { width: 105px; }
+#vista-historial table th:nth-child(7) { width: 85px; }
 
 .txt-ingreso { color: var(--ingreso-color); font-weight: bold; }
 .txt-gasto { color: var(--gasto-color); font-weight: bold; }
@@ -319,72 +348,38 @@ th, td {
 .selector-archivo-oculto { display: none; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 .selector-archivo-visible { display: block; margin-bottom: 15px; background: #ebf5fb; padding: 10px; border-radius: 6px; }
 
-.columna-completa {
-    grid-column: 1 / -1;
-    width: 100%;
-}
+.columna-completa { grid-column: 1 / -1; width: 100%; }
 
 /* ==========================================
-   MEDIA QUERIES (Alineación elástica en celulares)
-   ========================================== */
-
-/* ==========================================
-   MEDIA QUERIES (100% Sin Scroll - Formato Tarjeta para Móviles)
+   MEDIA QUERIES (Formato Adaptable para Celulares)
    ========================================== */
 @media (max-width: 900px) {
-    .dashboard-grid { 
-        grid-template-columns: 1fr; /* Una columna vertical en móvil */
-    }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .balances-individuales { flex-wrap: wrap; }
+    .card { flex: 1 1 140px; }
     
-    .balances-individuales {
-        flex-wrap: wrap; /* Tarjetas de Diego y Romina en vertical */
-    }
+    .barra-busqueda-filtros { grid-template-columns: 1fr; gap: 10px; }
+    .resumen-hoy-cabecera { flex-direction: column; align-items: stretch; }
+    .contenedor-mini-cards-hoy { justify-content: space-between; }
+    .mini-card-hoy { flex: 1; }
+
+    thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
     
-    .card {
-        flex: 1 1 140px;
-    }
-
-    /* Ocultamos los encabezados de la tabla (Fecha, Miembro, etc.) porque ya no se leen en columnas */
-    thead {
-        display: none;
-    }
-
-    /* Convertimos la tabla y el cuerpo en bloques flexibles */
-    table, tbody, tr, td {
-        display: block;
-        width: 100%;
-    }
-
-    /* Cada fila ahora es una tarjeta independiente */
     tr {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin-bottom: 12px;
-        padding: 10px 14px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        box-sizing: border-box;
+        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; padding: 10px 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); box-sizing: border-box;
     }
 
-    /* Ajustamos cada celda para que se alinee de forma compacta */
     td {
-        border: none !important;
-        padding: 4px 0 !important;
-        white-space: normal !important;
-        font-size: 0.95rem !important; /* Tipografía cómoda y legible */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        border: none !important; padding: 4px 0 !important; white-space: normal !important; font-size: 0.95rem !important; display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL DASHBOARD (TABLA CORTA) --- */
     #lista-hoy tr td:nth-child(1)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
     #lista-hoy tr td:nth-child(2)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
     #lista-hoy tr td:nth-child(3)::before { content: "💳 Medio:"; font-weight: bold; color: #7f8c8d; }
     #lista-hoy tr td:nth-child(4)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
     #lista-hoy tr td:nth-child(5)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
 
-    /* --- DISEÑO EXCLUSIVO PARA LA TABLA DEL HISTORIAL (TABLA LARGA) --- */
     #lista-transacciones tr td:nth-child(1)::before { content: "📅 Fecha:"; font-weight: bold; color: #7f8c8d; }
     #lista-transacciones tr td:nth-child(2)::before { content: "👤 Miembro:"; font-weight: bold; color: #7f8c8d; }
     #lista-transacciones tr td:nth-child(3)::before { content: "📝 Detalle:"; font-weight: bold; color: #7f8c8d; }
@@ -393,11 +388,5 @@ th, td {
     #lista-transacciones tr td:nth-child(6)::before { content: "💰 Monto:"; font-weight: bold; color: #7f8c8d; }
     #lista-transacciones tr td:nth-child(7)::before { content: "⚡ Acciones:"; font-weight: bold; color: #7f8c8d; }
 
-    /* Destacar el texto de la izquierda en las etiquetas automáticas */
-    td::before {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+    td::before { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
 }
-

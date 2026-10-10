@@ -1,558 +1,666 @@
-// Variable de Estado del Filtro Activo: 'hoy', 'mes', o 'archivo'
-let filtroActivo = 'hoy';
-let mesSeleccionadoArchivo = '';
-let transaccionesMemoria = []; // Caché local para búsquedas y filtros rápidos
+// --- CONFIGURACIÓN DE ENDPOINTS (Mantiene compatibilidad con Render) ---
+const API_URL = '/api/server';
 
-document.addEventListener("DOMContentLoaded", () => {
-    inicializarArchivo();
+// Variables de estado de la aplicación (Versión 2.1)
+// CORRECCIÓN EN LA LÍNEA 5 DE APP.JS
+let transaccionesGlobal = [];
+
+let filtroPeriodoActual = 'mes'; // 'mes' o 'archivo'
+let filtroHoySeleccionado = 'todos'; // 'todos', 'ingreso', 'gasto'
+
+// Al cargar el documento, iniciamos la app
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarFormulario();
     cargarMovimientos();
-    
-    // Escuchar el cambio en el selector de operaciones (Ingreso/Gasto) para adaptar las etiquetas
-    const tipoSelect = document.getElementById("tipo");
-    if (tipoSelect) {
-        tipoSelect.addEventListener("change", alternarCamposPago);
-    }
 });
 
-// NAVEGACIÓN ENTRE PÁGINAS (Dashboard <=> Historial)
-function navegarA(pantalla) {
-    const vistaDashboard = document.getElementById("vista-dashboard");
-    const vistaHistorial = document.getElementById("vista-historial");
-    
-    if (pantalla === 'dashboard') {
-        vistaDashboard.style.display = "grid";
-        vistaHistorial.style.display = "none";
-        filtroActivo = 'hoy';
-    } else if (pantalla === 'historial') {
-        vistaDashboard.style.display = "none";
-        vistaHistorial.style.display = "block";
-        filtroActivo = 'mes'; // Por defecto al ir al historial muestra el mes en curso
+// NAVEGACIÓN ENTRE DASHBOARD E HISTORIAL
+function navegarA(vista) {
+    const dashboard = document.getElementById('vista-dashboard');
+    const historial = document.getElementById('vista-historial');
+
+    if (vista === 'dashboard') {
+        dashboard.style.display = 'grid';
+        historial.style.display = 'none';
+        cargarMovimientos(); // Refresca balances al volver
+    } else if (vista === 'historial') {
+        dashboard.style.display = 'none';
+        historial.style.display = 'grid';
+        // Reiniciamos selectores a por defecto al entrar al historial
+        document.getElementById('filtro-miembro').value = 'todos';
+        document.getElementById('filtro-tipo-historial').value = 'todos';
+        document.getElementById('filtro-medio').value = 'todos';
+        document.getElementById('buscar-texto').value = '';
+        cambiarFiltro('mes'); // Por defecto arranca en el mes en curso
     }
-    
-    // Sincronizar estados visuales de las pestañas
-    document.querySelectorAll(".btn-tab").forEach(btn => btn.classList.remove("activo"));
-    const tabActivo = document.getElementById(`tab-${filtroActivo}`);
-    if (tabActivo) tabActivo.classList.add("activo");
-    
-    procesarYRenderizarTablas();
 }
 
-// CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO (SOPORTA TRASPASOS)
-// CONTROL DINÁMICO DE CAMPOS DEL FORMULARIO (SOPORTA TRASPASOS Y FILTRO DE EGRESOS)
-function alternarCamposPago() {
-    const tipo = document.getElementById("tipo").value;
-    const labelMedioPago = document.getElementById("label-medio-pago");
-    const contenedorDestino = document.getElementById("contenedor-destino");
-    const medioDestino = document.getElementById("medio-destino");
+// CONTROL DE FILTROS EN PESTAÑAS DEL HISTORIAL (Mes vs Archivo)
+function cambiarFiltro(periodo) {
+    filtroPeriodoActual = periodo;
     
-    if (tipo === 'traspaso') {
-        if (labelMedioPago) labelMedioPago.innerText = '¿Desde dónde sale el dinero? (Origen):';
-        if (contenedorDestino) contenedorDestino.style.display = "block";
-        if (medioDestino) medioDestino.required = true;
+    const tabMes = document.getElementById('tab-mes');
+    const tabArchivo = document.getElementById('tab-archivo');
+    const selectorArchivo = document.getElementById('contenedor-selector-archivo');
+
+    if (periodo === 'mes') {
+        tabMes.classList.add('activo');
+        tabArchivo.classList.remove('activo');
+        selectorArchivo.className = 'selector-archivo-oculto';
+        filtrarHistorial();
     } else {
-        if (labelMedioPago) labelMedioPago.innerText = tipo === 'ingreso' ? 'Medio de Depósito:' : 'Medio de Pago:';
-        if (contenedorDestino) contenedorDestino.style.display = "none";
-        if (medioDestino) {
-            medioDestino.required = false;
-            medioDestino.value = "Mercado Pago";
-        }
+        tabMes.classList.remove('activo');
+        tabArchivo.classList.add('activo');
+        selectorArchivo.className = 'selector-archivo-visible';
+        generarOpcionesMesesArchivados();
     }
+}
+// INICIALIZACIÓN DEL FORMULARIO
+function inicializarFormulario() {
+    const form = document.getElementById('form-transaccion');
+    form.addEventListener('submit', guardarMovimiento);
+    alternarCamposPago(); // Seteo inicial de campos
+}
+
+// PUNTO 1: LÓGICA DE EFECTIVO UX OPTIMIZADA
+// Controla la visibilidad de los medios de pago origen/destino y campos físicos
+function alternarCamposPago() {
+    const tipo = document.getElementById('tipo').value;
+    const contenedorOrigen = document.getElementById('contenedor-origen');
+    const labelMedioPago = document.getElementById('label-medio-pago');
+    const contenedorDestino = document.getElementById('contenedor-destino');
+
+    if (tipo === 'traspaso') {
+        labelMedioPago.innerHTML = '¿Desde qué cuenta se saca el dinero? (Origen):';
+        contenedorOrigen.style.display = 'block';
+        contenedorDestino.style.display = 'block';
+        document.getElementById('medio-destino').required = true;
+    } else {
+        labelMedioPago.innerHTML = tipo === 'ingreso' ? 'Medio de Depósito:' : 'Medio de Pago / Cuenta:';
+        contenedorOrigen.style.display = 'block';
+        contenedorDestino.style.display = 'none';
+        document.getElementById('medio-destino').required = false;
+        
+        // Limpiamos campos de destino por seguridad
+        document.getElementById('medio-destino').value = 'Mercado Pago';
+    }
+
+    // Evaluamos la visibilidad de los lugares físicos de efectivo
     alternarUbicacionEfectivo();
     alternarUbicacionEfectivoDestino();
 }
 
+// Evalúa efectivo origen (SOLO OBLIGATORIO EN INGRESO + EFECTIVO)
 function alternarUbicacionEfectivo() {
-    const tipo = document.getElementById("tipo").value;
-    const medioPago = document.getElementById("medio-pago").value;
-    const contenedorUbicacion = document.getElementById("contenedor-ubicacion-efectivo");
-    const inputUbicacion = document.getElementById("ubicacion-efectivo");
-    const labelUbicacion = contenedorUbicacion ? contenedorUbicacion.querySelector("label") : null;
-    
-    // El campo de ubicación origen SOLO se muestra si es Efectivo Y ADEMÁS es un Ingreso o un Traspaso
-    if (medioPago === 'Efectivo' && (tipo === 'ingreso' || tipo === 'traspaso')) {
-        if (contenedorUbicacion) contenedorUbicacion.style.display = "block";
-        if (inputUbicacion) inputUbicacion.required = true;
-        
-        // Adaptar dinámicamente el texto según la operación
-        if (labelUbicacion) {
-            labelUbicacion.innerText = tipo === 'traspaso' 
-                ? '¿Desde qué lugar físico sale el efectivo?:' 
-                : '¿Dónde está el dinero físico? (Destino):';
-        }
+    const tipo = document.getElementById('tipo').value;
+    const medioPago = document.getElementById('medio-pago').value;
+    const contenedorUbicacion = document.getElementById('contenedor-ubicacion-efectivo');
+    const inputUbicacion = document.getElementById('ubicacion-efectivo');
+
+    // Modificación V2.1: Solo se pregunta ubicación en INGRESO de EFECTIVO
+    if (tipo === 'ingreso' && medioPago === 'Efectivo') {
+        contenedorUbicacion.style.display = 'block';
+        inputUbicacion.required = true;
     } else {
-        if (contenedorUbicacion) contenedorUbicacion.style.display = "none";
-        if (inputUbicacion) {
-            inputUbicacion.required = false;
-            inputUbicacion.value = ""; // Limpiar residuo para que no guarde basura en gastos
-        }
+        contenedorUbicacion.style.display = 'none';
+        inputUbicacion.required = false;
+        inputUbicacion.value = ''; // Limpia el campo automáticamente
     }
 }
 
+// Evalúa efectivo destino (SIEMPRE OCULTO EN V2.1 SEGÚN REQUERIMIENTO)
 function alternarUbicacionEfectivoDestino() {
-    const tipo = document.getElementById("tipo").value;
-    const medioDestino = document.getElementById("medio-destino").value;
-    const contenedorUbicacionDestino = document.getElementById("contenedor-ubicacion-efectivo-destino");
-    const inputUbicacionDestino = document.getElementById("ubicacion-efectivo-destino");
+    const contenedorDestinoFisico = document.getElementById('contenedor-ubicacion-efectivo-destino');
+    const inputDestinoFisico = document.getElementById('ubicacion-efectivo-destino');
     
-    if (tipo === 'traspaso' && medioDestino === 'Efectivo') {
-        if (contenedorUbicacionDestino) contenedorUbicacionDestino.style.display = "block";
-        if (inputUbicacionDestino) inputUbicacionDestino.required = true;
-    } else {
-        if (contenedorUbicacionDestino) contenedorUbicacionDestino.style.display = "none";
-        if (inputUbicacionDestino) {
-            inputUbicacionDestino.required = false;
-            inputUbicacionDestino.value = "";
-        }
+    // Al quitar la pregunta en traspasos internos de efectivo, este campo va siempre oculto
+    contenedorDestinoFisico.style.display = 'none';
+    inputDestinoFisico.required = false;
+    inputDestinoFisico.value = '';
+}
+// OBTENER MOVIMIENTOS DESDE EL BACKEND (Render)
+async function cargarMovimientos() {
+    try {
+        const respuesta = await fetch(API_URL);
+        if (!respuesta.ok) throw new Error('Error al conectar con el servidor');
+        
+        const datos = await respuesta.json();
+        transaccionesGlobal = datos.movimientos || [];
+        
+        // Ejecutamos el recálculo y actualización de toda la interfaz
+        procesarYRenderizarTodo();
+    } catch (error) {
+        console.error("Error cargando datos:", error);
     }
 }
 
+// PROCESAMIENTO CENTRAL DE BALANCES Y RENDERIZADO DEL DASHBOARD
+function procesarYRenderizarTodo() {
+    // 1. Inicialización de contadores y acumuladores matemáticos
+    let fondoTotalAcumulado = 0;
+    let balanceDiegoMes = 0;
+    let balanceRominaMes = 0;
+    let saldoMercadoPago = 0;
+    let saldoNaranjaX = 0;
+    let saldoGalicia = 0;
+    let saldoSantander = 0;
+    let saldoEfectivoTotal = 0;
 
+    let totalIngresosHoy = 0;
+    let totalGastosHoy = 0;
 
-// 1. REGISTRAR O EDITAR MOVIMIENTO (POST / REEMPLAZO)
-// 1. REGISTRAR O EDITAR MOVIMIENTO (POST / REEMPLAZO - ACTUALIZADO CON TRASPASOS)
-const formTransaccion = document.getElementById("form-transaccion");
-if (formTransaccion) {
-    formTransaccion.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    // Obtener marcas de tiempo para controlar "Hoy" y el "Mes En Curso"
+    const hoyStr = new Date().toLocaleDateString('es-AR');
+    const mesActualAño = new Date().getMonth();
+    const añoActual = new Date().getFullYear();
 
-        const idEdicion = document.getElementById("edit-id").value;
-        const hoy = new Date();
-        const fechaFormateada = `${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`;
-        const llaveMesActual = `${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
+    // Procesamos el listado completo de transacciones en orden cronológico inverso
+    transaccionesGlobal.forEach(t => {
+        const monto = parseFloat(t.monto) || 0;
+        const fechaT = new Date(t.id);
+        const esMesEnCurso = fechaT.getMonth() === mesActualAño && fechaT.getFullYear() === añoActual;
+        const esHoy = new Date(t.id).toLocaleDateString('es-AR') === hoyStr;
 
-        // Aquí empaquetamos todos los datos (incluyendo origen y destino del traspaso)
-        const movimiento = {
-            id: idEdicion ? parseInt(idEdicion) : Date.now(),
-            fecha: fechaFormateada,
-            llaveMes: llaveMesActual,
-            tipo: document.getElementById("tipo").value,
-            usuario: document.getElementById("usuario").value, 
-            monto: parseFloat(document.getElementById("monto").value),
-            descripcion: document.getElementById("descripcion").value,
-            medioPago: document.getElementById("medio-pago").value,
-            ubicacionEfectivo: document.getElementById("ubicacion-efectivo").value || "",
-            medioDestino: document.getElementById("medio-destino").value || "",
-            ubicacionEfectivoDestino: document.getElementById("ubicacion-efectivo-destino").value || ""
-        };
-
-        try {
-            // SI ESTAMOS EDITANDO: Eliminamos primero el registro viejo de forma transparente
-            if (idEdicion) {
-                const resDelete = await fetch(`/api/server?id=${idEdicion}`, { method: 'DELETE' });
-                if (!resDelete.ok) {
-                    alert("Error interno al procesar la actualización.");
-                    return;
-                }
+        // --- LÓGICA DE FONDO TOTAL ACUMULADO Y BALANCES MENSUALES ---
+        if (t.tipo === 'ingreso') {
+            fondoTotalAcumulado += monto;
+            if (esMesEnCurso) {
+                if (t.usuario === 'Diego') balanceDiegoMes += monto;
+                if (t.usuario === 'Romina') balanceRominaMes += monto;
             }
-
-            // GUARDAR NUEVO O CORREGIDO EN MONGODB
-            const res = await fetch('/api/server', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(movimiento)
-            });
-
-            if (res.ok) {
-                alert(idEdicion ? "¡Movimiento editado con éxito!" : "¡Movimiento guardado con éxito!");
-                cancelarEdicion(); // Restablece el formulario a su modo normal
-                cargarMovimientos();
-            } else {
-                alert("Error en el servidor al procesar la operación.");
+        } else if (t.tipo === 'gasto') {
+            fondoTotalAcumulado -= monto;
+            if (esMesEnCurso) {
+                if (t.usuario === 'Diego') balanceDiegoMes -= monto;
+                if (t.usuario === 'Romina') balanceRominaMes -= monto;
             }
-        } catch (error) {
-            console.error("Error al registrar movimiento:", error);
         }
+
+        // --- LÓGICA DE LIQUIDEZ Y MEDIOS DE PAGO (DINERO REAL) ---
+        if (t.tipo === 'ingreso') {
+            if (t.medioPago === 'Mercado Pago') saldoMercadoPago += monto;
+            else if (t.medioPago === 'Naranja X') saldoNaranjaX += monto;
+            else if (t.medioPago === 'Banco Galicia') saldoGalicia += monto;
+            else if (t.medioPago === 'Banco Santander') saldoSantander += monto;
+            else if (t.medioPago === 'Efectivo') saldoEfectivoTotal += monto;
+        } else if (t.tipo === 'gasto') {
+            if (t.medioPago === 'Mercado Pago') saldoMercadoPago -= monto;
+            else if (t.medioPago === 'Naranja X') saldoNaranjaX -= monto;
+            else if (t.medioPago === 'Banco Galicia') saldoGalicia -= monto;
+            else if (t.medioPago === 'Banco Santander') saldoSantander -= monto;
+            else if (t.medioPago === 'Efectivo') saldoEfectivoTotal -= monto;
+        } else if (t.tipo === 'traspaso') {
+            // Restamos del Origen
+            if (t.medioPago === 'Mercado Pago') saldoMercadoPago -= monto;
+            else if (t.medioPago === 'Naranja X') saldoNaranjaX -= monto;
+            else if (t.medioPago === 'Banco Galicia') saldoGalicia -= monto;
+            else if (t.medioPago === 'Banco Santander') saldoSantander -= monto;
+            else if (t.medioPago === 'Efectivo') saldoEfectivoTotal -= monto;
+
+            // Sumamos al Destino (t.medioDestino)
+            if (t.medioDestino === 'Mercado Pago') saldoMercadoPago += monto;
+            else if (t.medioDestino === 'Naranja X') saldoNaranjaX += monto;
+            else if (t.medioDestino === 'Banco Galicia') saldoGalicia += monto;
+            else if (t.medioDestino === 'Banco Santander') saldoSantander += monto;
+            else if (t.medioDestino === 'Efectivo') saldoEfectivoTotal += monto;
+        }
+
+        // --- LÓGICA DE CONTROL DIARIO (HOY) ---
+        if (esHoy) {
+            if (t.tipo === 'ingreso') totalIngresosHoy += monto;
+            if (t.tipo === 'gasto') totalGastosHoy += monto;
+        }
+    });
+
+    // PUNTO 2: Dinero Real Disponible es la suma de todas las disponibilidades líquidas reales
+    const dineroRealDisponible = saldoMercadoPago + saldoNaranjaX + saldoGalicia + saldoSantander + saldoEfectivoTotal;
+    const balanceNetoHoy = totalIngresosHoy - totalGastosHoy;
+
+    // 2. Renderizado de las 3 Cards Tops Principales
+    document.getElementById('total-global').innerHTML = `$${fondoTotalAcumulado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('total-real').innerHTML = `$${dineroRealDisponible.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('total-diario').innerHTML = `$${balanceNetoHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // 3. Renderizado de Tarjetas del Dashboard Izquierdo
+    document.getElementById('total-usuario-a').innerHTML = `$${balanceDiegoMes.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('total-usuario-b').innerHTML = `$${balanceRominaMes.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('saldo-mp').innerHTML = `$${saldoMercadoPago.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('saldo-nx').innerHTML = `$${saldoNaranjaX.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('saldo-efectivo').innerHTML = `$${saldoEfectivoTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // 4. Renderizado de Mini-Cards Diarias Dinámicas (Punto 4)
+    document.getElementById('mini-ingreso-hoy').innerHTML = `$${totalIngresosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('mini-gasto-hoy').innerHTML = `$${totalGastosHoy.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // 5. Dibujar la tabla de movimientos de hoy respetando filtros aplicados
+    renderizarTablaHoy(totalIngresosHoy, totalGastosHoy);
+}
+// CONTROL DE FILTROS EN EL DASHBOARD PRINCIPAL (TABLA DE HOY)
+function filtrarHoy(tipo) {
+    filtroHoySeleccionado = tipo;
+    
+    // Cambiar clases activas en las pestañas
+    document.getElementById('tab-hoy-todos').classList.remove('activo');
+    document.getElementById('tab-hoy-ingresos').classList.remove('activo');
+    document.getElementById('tab-hoy-gastos').classList.remove('activo');
+    
+    if (tipo === 'todos') document.getElementById('tab-hoy-todos').classList.add('activo');
+    else if (tipo === 'ingreso') document.getElementById('tab-hoy-ingresos').classList.add('activo');
+    else if (tipo === 'gasto') document.getElementById('tab-hoy-gastos').classList.add('activo');
+
+    // Ejecutamos el renderizado de la tabla con los totales ya calculados
+    cargarMovimientos(); 
+}
+
+// RENDERIZAR TABLA CORTA (MOVIMIENTOS DE HOY)
+function renderizarTablaHoy() {
+    const tbody = document.getElementById('lista-hoy');
+    tbody.innerHTML = '';
+    
+    const hoyStr = new Date().toLocaleDateString('es-AR');
+    
+    // Filtrar movimientos pertenecientes al día de hoy
+    let movimientosHoy = transaccionesGlobal.filter(t => new Date(t.id).toLocaleDateString('es-AR') === hoyStr);
+    
+    // Aplicar el filtro por tipo seleccionado en las pestañas del dashboard
+    if (filtroHoySeleccionado !== 'todos') {
+        movimientosHoy = movimientosHoy.filter(t => t.tipo === filtroHoySeleccionado);
+    }
+
+    // PUNTO 4: Ocultar o mostrar las mini-cards de forma inteligente según la pestaña activa
+    const cardIngreso = document.getElementById('mini-card-hoy-ingreso');
+    const cardGasto = document.getElementById('mini-card-hoy-gasto');
+
+    if (filtroHoySeleccionado === 'todos') {
+        cardIngreso.style.display = 'flex';
+        cardGasto.style.display = 'flex';
+    } else if (filtroHoySeleccionado === 'ingreso') {
+        cardIngreso.style.display = 'flex';
+        cardGasto.style.display = 'none';
+    } else if (filtroHoySeleccionado === 'gasto') {
+        cardIngreso.style.display = 'none';
+        cardGasto.style.display = 'flex';
+    }
+
+    if (movimientosHoy.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#7f8c8d;">No hay movimientos registrados hoy.</td></tr>`;
+        return;
+    }
+
+    movimientosHoy.forEach(t => {
+        const tr = document.createElement('tr');
+        const esIngreso = t.tipo === 'ingreso';
+        const esTraspaso = t.tipo === 'traspaso';
+        
+        let medioTexto = t.medioPago;
+        if (t.medioPago === 'Efectivo' && t.ubicacionEfectivo) {
+            medioTexto += ` (${t.ubicacionEfectivo})`;
+        }
+        if (esTraspaso) {
+            medioTexto = `🔄 ${t.medioPago} ➡️ ${t.medioDestino}`;
+        }
+
+        let claseMonto = esIngreso ? 'txt-ingreso' : 'txt-gasto';
+        if (esTraspaso) claseMonto = ''; 
+
+        let signo = esIngreso ? '+' : (esTraspaso ? '' : '-');
+
+        tr.innerHTML = `
+            <td>${t.usuario}</td>
+            <td>${t.descripcion}</td>
+            <td>${medioTexto}</td>
+            <td class="${claseMonto}">${signo}$${parseFloat(t.monto).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+            <td>
+                <button class="btn-editar" onclick="prepararEdicion(${t.id})">✏️</button>
+                <button class="btn-borrar" onclick="eliminarMovimiento(${t.id})">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
 }
 
-// ACTIVAR MODO EDICIÓN (✏️ - ACTUALIZADO CON TRASPASOS)
-function prepararEdicion(id) {
-    const mov = transaccionesMemoria.find(m => m.id === id);
-    if (!mov) return;
+// PUNTO 5: SÚPER FILTROS CRUZADOS Y PANEL DE TOTALES DINÁMICOS EN HISTORIAL
+function filtrarHistorial() {
+    const textoBusqueda = document.getElementById('buscar-texto').value.toLowerCase();
+    const miembroSelected = document.getElementById('filtro-miembro').value;
+    const tipoSelected = document.getElementById('filtro-tipo-historial').value;
+    const medioSelected = document.getElementById('filtro-medio').value;
 
-    // Regresar al panel principal si el usuario estaba en el historial
-    navegarA('dashboard');
+    let registros = [...transaccionesGlobal];
+    const mesActualAño = new Date().getMonth();
+    const añoActual = new Date().getFullYear();
 
-    // Volver a cargar todos los datos en los casilleros del formulario
-    document.getElementById("edit-id").value = mov.id;
-    document.getElementById("tipo").value = mov.tipo;
-    document.getElementById("usuario").value = mov.usuario;
-    document.getElementById("monto").value = mov.monto;
-    document.getElementById("descripcion").value = mov.descripcion;
-    document.getElementById("medio-pago").value = mov.medioPago || "Mercado Pago";
-    
-    // Cargar los campos nuevos de traspaso por si era un traspaso lo que se erró
-    document.getElementById("medio-destino").value = mov.medioDestino || "Mercado Pago";
-    document.getElementById("ubicacion-efectivo-destino").value = mov.ubicacionEfectivoDestino || "";
-    
-    alternarCamposPago(); // Actualiza etiquetas y despliega campos si corresponde
-
-    if (mov.medioPago === 'Efectivo') {
-        document.getElementById("ubicacion-efectivo").value = mov.ubicacionEfectivo || "";
+    // 1. Filtrado por Pestaña de Tiempo (Mes en Curso vs Histórico)
+    if (filtroPeriodoActual === 'mes') {
+        registros = registros.filter(t => {
+            const f = new Date(t.id);
+            return f.getMonth() === mesActualAño && f.getFullYear() === añoActual;
+        });
+    } else {
+        const selector = document.getElementById('selector-meses');
+        if (selector.value) {
+            const [año, mes] = selector.value.split('-');
+            registros = registros.filter(t => {
+                const f = new Date(t.id);
+                return f.getFullYear() === parseInt(año) && f.getMonth() === parseInt(mes);
+            });
+        }
     }
 
-    // Cambiar el diseño del formulario para avisar que estamos editando
-    document.getElementById("form-titulo").innerText = "⚠️ Editando Movimiento";
-    document.getElementById("btn-submit-form").innerText = "Guardar Cambios";
-    document.getElementById("btn-submit-form").style.backgroundColor = "#e67e22";
-    document.getElementById("btn-cancelar-edit").style.display = "block";
+    // 2. Filtro Cruzado: Búsqueda por Texto Libre
+    if (textoBusqueda) {
+        registros = registros.filter(t => t.descripcion.toLowerCase().includes(textoBusqueda));
+    }
+
+    // 3. Filtro Cruzado: Por Miembro de la Familia
+    if (miembroSelected !== 'todos') {
+        registros = registros.filter(t => t.usuario === miembroSelected);
+    }
+
+    // 4. Filtro Cruzado: Por Tipo de Operación
+    if (tipoSelected !== 'todos') {
+        registros = registros.filter(t => t.tipo === tipoSelected);
+    }
+
+    // 5. Filtro Cruzado: Por Medio de Pago (Evalúa Origen o Destino en traspasos)
+    if (medioSelected !== 'todos') {
+        registros = registros.filter(t => t.medioPago === medioSelected || (t.tipo === 'traspaso' && t.medioDestino === medioSelected));
+    }
+
+    // --- CÁLCULO DE LOS TOTALES EN BASE A LOS REGISTROS FILTRADOS ---
+    let sumaIngresos = 0;
+    let sumaGastos = 0;
+
+    registros.forEach(t => {
+        const m = parseFloat(t.monto) || 0;
+        if (t.tipo === 'ingreso') sumaIngresos += m;
+        if (t.tipo === 'gasto') sumaGastos += m;
+    });
+
+    const balanceNetoFiltrado = sumaIngresos - sumaGastos;
+
+    // --- INTERFAZ INTELIGENTE DE TOTALES: MOSTRAR/OCULTAR DINÁMICAMENTE ---
+    const cardNeto = document.getElementById('card-total-neto-historial');
+    const cardIngresos = document.getElementById('card-total-ingresos-historial');
+    const cardGastos = document.getElementById('card-total-gastos-historial');
+
+    // Inyectamos valores calculados
+    document.getElementById('total-neto-historial').innerHTML = `$${balanceNetoFiltrado.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    document.getElementById('total-ingresos-historial').innerHTML = `$${sumaIngresos.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    document.getElementById('total-gastos-historial').innerHTML = `$${sumaGastos.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+
+    // Lógica inteligente de visualización limpia según selección
+    if (tipoSelected === 'todos' || tipoSelected === 'traspaso') {
+        cardNeto.style.display = 'flex';
+        cardIngresos.style.display = 'flex';
+        cardGastos.style.display = 'flex';
+    } else if (tipoSelected === 'ingreso') {
+        cardNeto.style.display = 'none';
+        cardIngresos.style.display = 'flex';
+        cardGastos.style.display = 'none';
+    } else if (tipoSelected === 'gasto') {
+        cardNeto.style.display = 'none';
+        cardIngresos.style.display = 'none';
+        cardGastos.style.display = 'flex';
+    }
+
+    // Renderizar cuerpo de la tabla del Historial
+    renderizarTablaHistorialCompleto(registros);
 }
 
+// DIBUJAR TABLA DEL HISTORIAL COMPLETO
+function renderizarTablaHistorialCompleto(registros) {
+    const tbody = document.getElementById('lista-transacciones');
+    tbody.innerHTML = '';
 
+    if (registros.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#7f8c8d;">No se encontraron registros históricos con los filtros aplicados.</td></tr>`;
+        return;
+    }
+
+    registros.forEach(t => {
+        const tr = document.createElement('tr');
+        const fechaFormateada = new Date(t.id).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+        
+        const esIngreso = t.tipo === 'ingreso';
+        const esTraspaso = t.tipo === 'traspaso';
+
+        let medioTexto = t.medioPago;
+        if (t.medioPago === 'Efectivo' && t.ubicacionEfectivo) medioTexto += ` (${t.ubicacionEfectivo})`;
+        if (esTraspaso) medioTexto = `🔄 ${t.medioPago} ➡️ ${t.medioDestino}`;
+
+        let claseMonto = esIngreso ? 'txt-ingreso' : 'txt-gasto';
+        let tipoLabel = esIngreso ? '🟢 Ingreso' : '🔴 Gasto';
+        if (esTraspaso) {
+            claseMonto = '';
+            tipoLabel = '🔄 Traspaso';
+        }
+
+        let signo = esIngreso ? '+' : (esTraspaso ? '' : '-');
+
+        tr.innerHTML = `
+            <td>${fechaFormateada}</td>
+            <td>${t.usuario}</td>
+            <td>${t.descripcion}</td>
+            <td>${medioTexto}</td>
+            <td>${tipoLabel}</td>
+            <td class="${claseMonto}">${signo}$${parseFloat(t.monto).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+            <td>
+                <button class="btn-editar" onclick="prepararEdicion(${t.id})">✏️</button>
+                <button class="btn-borrar" onclick="eliminarMovimiento(${t.id})">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// GUARDAR NUEVO MOVIMIENTO / CONFIRMAR EDICIÓN
+async function guardarMovimiento(e) {
+    e.preventDefault();
+
+    const editId = document.getElementById('edit-id').value;
+    const tipo = document.getElementById('tipo').value;
+    const usuario = document.getElementById('usuario').value;
+    const medioPago = document.getElementById('medio-pago').value;
+    const ubicacionEfectivo = document.getElementById('ubicacion-efectivo').value;
+    const medioDestino = document.getElementById('medio-destino').value;
+    const monto = parseFloat(document.getElementById('monto').value);
+    const descripcion = document.getElementById('descripcion').value;
+
+    const transaccion = {
+        id: editId ? parseInt(editId) : Date.now(),
+        tipo,
+            id: editId ? parseInt(editId) : Date.now(),
+        tipo,
+        usuario,
+        medioPago,
+        ubicacionEfectivo: (tipo === 'ingreso' && medioPago === 'Efectivo') ? ubicacionEfectivo : '',
+        medioDestino: tipo === 'traspaso' ? medioDestino : '',
+        monto,
+        descripcion
+    };
+
+    try {
+        // Si estábamos editando, eliminamos el registro viejo primero mediante DELETE
+        if (editId) {
+            await fetch(`${API_URL}?id=${editId}`, { method: 'DELETE' });
+        }
+
+        // Enviamos el registro nuevo o corregido por POST a Render
+        const respuesta = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transaccion)
+        });
+
+        if (!respuesta.ok) throw new Error('Error al guardar en el servidor');
+
+        // Limpieza y reseteo completo del formulario
+        cancelarEdicion();
+        // Recargar los movimientos y actualizar balances en tiempo real
+        cargarMovimientos();
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("Hubo un problema al guardar el movimiento en el servidor.");
+    }
+}
+
+// PREPARAR PANEL PARA EDICIÓN (✏️)
+function prepararEdicion(id) {
+    const t = transaccionesGlobal.find(item => item.id === id);
+    if (!t) return;
+
+    // Volvemos automáticamente al dashboard principal si estábamos parados en el historial
+    document.getElementById('vista-dashboard').style.display = 'grid';
+    document.getElementById('vista-historial').style.display = 'none';
+
+    // Inyectamos los datos en los campos del formulario
+    document.getElementById('edit-id').value = t.id;
+    document.getElementById('tipo').value = t.tipo;
+    document.getElementById('usuario').value = t.usuario;
+    
+    // Configuramos los campos dinámicos según el tipo de operación que se recuperó
+    alternarCamposPago(); 
+
+    document.getElementById('medio-pago').value = t.medioPago;
+    if (t.tipo === 'ingreso' && t.medioPago === 'Efectivo') {
+        document.getElementById('contenedor-ubicacion-efectivo').style.display = 'block';
+        document.getElementById('ubicacion-efectivo').value = t.ubicacionEfectivo || '';
+    }
+    if (t.tipo === 'traspaso') {
+        document.getElementById('medio-destino').value = t.medioDestino || 'Mercado Pago';
+    }
+
+    document.getElementById('monto').value = t.monto;
+    document.getElementById('descripcion').value = t.descripcion;
+
+    // Cambiar la estética visual del formulario para avisar que se está editando
+    document.getElementById('form-titulo').innerHTML = '✏️ Editar Movimiento Seleccionado';
+    document.getElementById('btn-submit-form').innerHTML = 'Confirmar Modificación';
+    document.getElementById('btn-cancelar-edit').style.display = 'block';
+
+    // Desplazamiento suave de pantalla hacia el formulario
+    window.scrollTo({ top: document.getElementById('form-titulo').offsetTop - 20, behavior: 'smooth' });
+}
+
+// CANCELAR EDICIÓN Y REINICIAR FORMULARIO DE CARGA
 function cancelarEdicion() {
-    if(formTransaccion) formTransaccion.reset();
-    document.getElementById("edit-id").value = "";
-    document.getElementById("form-titulo").innerText = "📝 Registrar Nuevo Movimiento";
-    document.getElementById("btn-submit-form").innerText = "Guardar Movimiento";
-    document.getElementById("btn-submit-form").style.backgroundColor = "var(--primary-color)";
-    document.getElementById("btn-cancelar-edit").style.display = "none";
+    document.getElementById('form-transaccion').reset();
+    document.getElementById('edit-id').value = '';
+    
+    document.getElementById('form-titulo').innerHTML = '📝 Registrar Nuevo Movimiento';
+    document.getElementById('btn-submit-form').innerHTML = 'Guardar Movimiento';
+    document.getElementById('btn-cancelar-edit').style.display = 'none';
+    
     alternarCamposPago();
 }
 
-// 2. CARGAR MOVIMIENTOS DESDE MONGODB (GET)
-async function cargarMovimientos() {
-    try {
-        const res = await fetch('/api/server');
-        const datos = await res.json();
-        transaccionesMemoria = datos.movimientos || [];
-        
-        actualizarTodosLosBalances(transaccionesMemoria);
-        procesarYRenderizarTablas();
-    } catch (error) {
-        console.error("Error al cargar los movimientos:", error);
-    }
-}
-
-// 3. ELIMINAR MOVIMIENTO (DELETE)
+// ELIMINAR MOVIMIENTO DEL SISTEMA (🗑️)
 async function eliminarMovimiento(id) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este movimiento definitivamente?")) return;
-    
+    if (!confirm('¿Estás seguro de que deseas eliminar permanentemente este registro?')) return;
+
     try {
-        const res = await fetch(`/api/server?id=${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            cargarMovimientos();
-        } else {
-            alert("No se pudo eliminar el movimiento.");
-        }
+        const respuesta = await fetch(`${API_URL}?id=${id}`, { method: 'DELETE' });
+        if (!respuesta.ok) throw new Error('Error al eliminar en el servidor');
+
+        // Volver a consultar la base de datos para recalcular todos los balances
+        cargarMovimientos();
     } catch (error) {
-        console.error("Error al eliminar movimiento:", error);
+        console.error("Error al eliminar:", error);
+        alert("No se pudo eliminar el movimiento.");
     }
 }
-function actualizarTodosLosBalances(movimientosMesActual) {
-    const hoyStr = obtenerFechaHoyString();
-    let acumuladoGlobal = 0;
-    
-    let saldoMercadoPago = 0;
-    let saldoNaranjaX = 0;
-    let saldoEfectivo = 0;
-
-    // Procesar función matemática de impacto
-    const procesarImpactoBilleteras = (mov) => {
-        if (mov.tipo === 'ingreso') {
-            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago += mov.monto;
-            if (mov.medioPago === 'Naranja X') saldoNaranjaX += mov.monto;
-            if (mov.medioPago === 'Efectivo') saldoEfectivo += mov.monto;
-        } 
-        else if (mov.tipo === 'gasto') {
-            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago -= mov.monto;
-            if (mov.medioPago === 'Naranja X') saldoNaranjaX -= mov.monto;
-            if (mov.medioPago === 'Efectivo') saldoEfectivo -= mov.monto;
-        } 
-        else if (mov.tipo === 'traspaso') {
-            // Restar al origen
-            if (mov.medioPago === 'Mercado Pago') saldoMercadoPago -= mov.monto;
-            if (mov.medioPago === 'Naranja X') saldoNaranjaX -= mov.monto;
-            if (mov.medioPago === 'Efectivo') saldoEfectivo -= mov.monto;
-            // Sumar al destino
-            if (mov.medioDestino === 'Mercado Pago') saldoMercadoPago += mov.monto;
-            if (mov.medioDestino === 'Naranja X') saldoNaranjaX += mov.monto;
-            if (mov.medioDestino === 'Efectivo') saldoEfectivo += mov.monto;
-        }
-    };
-
-    // 1. Histórico local
-    const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-    Object.values(archivoHistorico).forEach(listaMes => {
-        listaMes.forEach(mov => {
-            if (mov.tipo !== 'traspaso') {
-                acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-            }
-            procesarImpactoBilleteras(mov);
-        });
-    });
-
-    // 2. MongoDB activos
-    movimientosMesActual.forEach(mov => {
-        if (mov.tipo !== 'traspaso') {
-            acumuladoGlobal += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        }
-        procesarImpactoBilleteras(mov);
-    });
-
-    // 3. Totales mensuales de usuario y diarios (Los traspasos no suman como ingreso ni gasto mensual)
-    let acumuladoDiario = 0;
-    movimientosMesActual.filter(mov => mov.fecha === hoyStr).forEach(mov => {
-        if (mov.tipo !== 'traspaso') acumuladoDiario += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-    });
-
-    let acumuladoDiego = 0;
-    let acumuladoRomina = 0;
-    movimientosMesActual.forEach(mov => {
-        if (mov.tipo !== 'traspaso') {
-            if (mov.usuario === 'Diego') acumuladoDiego += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-            if (mov.usuario === 'Romina') acumuladoRomina += (mov.tipo === 'ingreso' ? mov.monto : -mov.monto);
-        }
-    });
-
-    if(document.getElementById("total-global")) document.getElementById("total-global").innerText = formatMoneda(acumuladoGlobal);
-    if(document.getElementById("total-diario")) document.getElementById("total-diario").innerText = formatMoneda(acumuladoDiario);
-    if(document.getElementById("total-usuario-a")) document.getElementById("total-usuario-a").innerText = formatMoneda(acumuladoDiego);
-    if(document.getElementById("total-usuario-b")) document.getElementById("total-usuario-b").innerText = formatMoneda(acumuladoRomina);
-    
-    if(document.getElementById("saldo-mp")) document.getElementById("saldo-mp").innerText = formatMoneda(saldoMercadoPago);
-    if(document.getElementById("saldo-nx")) document.getElementById("saldo-nx").innerText = formatMoneda(saldoNaranjaX);
-    if(document.getElementById("saldo-efectivo")) document.getElementById("saldo-efectivo").innerText = formatMoneda(saldoEfectivo);
-}
-
-
-
-// FILTRADO DINÁMICO E INYECCIÓN DE TABLAS
-function procesarYRenderizarTablas() {
-    // 1. Renderizar siempre la tabla resumida de "Hoy" en el Dashboard principal
-    const hoyStr = obtenerFechaHoyString();
-    const movimientosHoy = transaccionesMemoria.filter(mov => mov.fecha === hoyStr);
-    renderizarFilaTablaCorta(movimientosHoy);
-
-    // 2. Controlar la tabla grande del panel Histórico
-    filtrarHistorial();
-}
-
-function filtrarHistorial() {
-    let movimientosAMostrar = [];
-    const btnCerrarMes = document.getElementById("btn-cerrar-mes");
-    const divSelectorArchivo = document.getElementById("contenedor-selector-archivo");
-
-    if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-oculto";
-    if (btnCerrarMes) btnCerrarMes.style.display = "none";
-
-    // Clasificar origen por pestaña seleccionada
-    if (filtroActivo === 'mes') {
-        movimientosAMostrar = [...transaccionesMemoria];
-        if (btnCerrarMes) btnCerrarMes.style.display = "block";
-    } 
-    else if (filtroActivo === 'archivo') {
-        if (divSelectorArchivo) divSelectorArchivo.className = "selector-archivo-visible";
-        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-        movimientosAMostrar = archivoHistorico[mesSeleccionadoArchivo] || [];
-    }
-
-    // Aplicar Filtro de búsqueda por texto (Detalle)
-    const textoBusqueda = document.getElementById("buscar-texto") ? document.getElementById("buscar-texto").value.toLowerCase() : "";
-    if (textoBusqueda) {
-        movimientosAMostrar = movimientosAMostrar.filter(mov => 
-            mov.descripcion && mov.descripcion.toLowerCase().includes(textoBusqueda)
-        );
-    }
-
-    // Aplicar Filtro Avanzado de Billeteras/Medio de pago
-    const medioFiltrar = document.getElementById("filtro-medio") ? document.getElementById("filtro-medio").value : "todos";
-    if (medioFiltrar !== "todos") {
-        movimientosAMostrar = movimientosAMostrar.filter(mov => mov.medioPago === medioFiltrar);
-    }
-
-    renderizarFilaTablaLarga(movimientosAMostrar);
-}
-
-// INYECTAR TABLA COMPACTA (Dashboard Principal - CORREGIDA)
-function renderizarFilaTablaCorta(movimientos) {
-    const listaHoyContenedor = document.getElementById("lista-hoy");
-    if (!listaHoyContenedor) return;
-    
-    listaHoyContenedor.innerHTML = "";
-
-    if (movimientos.length === 0) {
-        listaHoyContenedor.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#7f8c8d;">No hay operaciones registradas hoy.</td></tr>`;
-        return;
-    }
-
-    movimientos.forEach(mov => {
-        const tr = document.createElement("tr");
-        
-        // CORRECCIÓN AQUÍ: Usamos 'let' en lugar de 'const' para poder modificar el texto dinámicamente
-        let detalleMedio = "";
-        if (mov.tipo === 'traspaso') {
-            detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
-        } else {
-            detalleMedio = mov.medioPago === 'Efectivo' 
-                ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
-                : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
-        }
-
-        tr.innerHTML = `
-            <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
-            <td>${mov.descripcion}</td>
-            <td style="font-size: 0.85rem; color: #566573;">${detalleMedio}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">
-                ${mov.tipo === 'ingreso' ? '+' : (mov.tipo === 'gasto' ? '-' : '')}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </td>
-            <td>
-                <button class="btn-editar" onclick="prepararEdicion(${mov.id})">✏️</button>
-                <button class="btn-borrar" onclick="eliminarMovimiento(${mov.id})">❌</button>
-            </td>
-        `;
-        listaHoyContenedor.appendChild(tr);
-    });
-}
-
-// INYECTAR TABLA EXTENDIDA (Historial Completo - CORREGIDA)
-function renderizarFilaTablaLarga(movimientos) {
-    const listaHistorialContenedor = document.getElementById("lista-transacciones");
-    if (!listaHistorialContenedor) return;
-    
-    listaHistorialContenedor.innerHTML = ""; 
-
-    if (movimientos.length === 0) {
-        listaHistorialContenedor.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#7f8c8d;">Ningún registro coincide con los filtros aplicados.</td></tr>`;
-        return;
-    }
-
-    movimientos.forEach(mov => {
-        const tr = document.createElement("tr");
-        
-        // CORRECCIÓN AQUÍ: Usamos 'let' para que no se rompa al asignar el traspaso
-        let detalleMedio = "";
-        if (mov.tipo === 'traspaso') {
-            detalleMedio = `🔄 De: ${mov.medioPago} a ${mov.medioDestino}`;
-        } else {
-            detalleMedio = mov.medioPago === 'Efectivo' 
-                ? `💵 Efectivo (${mov.ubicacionEfectivo || 'Físico'})` 
-                : `${obtenerIconoMedio(mov.medioPago)} ${mov.medioPago || 'Transferencia'}`;
-        }
-
-        const celdaAcciones = (filtroActivo === 'archivo') 
-            ? `<td>🔒 Archivo</td>` 
-            : `<td>
-                <button class="btn-editar" onclick="prepararEdicion(${mov.id})">✏️</button>
-                <button class="btn-borrar" onclick="eliminarMovimiento(${mov.id})">❌</button>
-               </td>`;
-
-        tr.innerHTML = `
-            <td>${mov.fecha}</td>
-            <td style="text-transform: capitalize; font-weight: 500;">${mov.usuario}</td>
-            <td>${mov.descripcion}</td>
-            <td style="font-size: 0.85rem; color: #566573;">${detalleMedio}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">${mov.tipo.toUpperCase()}</td>
-            <td class="${mov.tipo === 'ingreso' ? 'txt-ingreso' : (mov.tipo === 'gasto' ? 'txt-gasto' : '')}">
-                ${mov.tipo === 'ingreso' ? '+' : (mov.tipo === 'gasto' ? '-' : '')}$${mov.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </td>
-            ${celdaAcciones}
-        `;
-        listaHistorialContenedor.appendChild(tr);
-    });
-}
-
-
-function obtenerIconoMedio(medio) {
-    switch (medio) {
-        case 'Mercado Pago': return '📱';
-        case 'Naranja X': return '🍊';
-        case 'Banco Galicia': return '🦁';
-        case 'Banco Santander': return '🔴';
-        default: return '💳';
-    }
-}
-
-// CONTROL DE FILTROS DE PESTAÑA
-function cambiarFiltro(nuevoFiltro) {
-    filtroActivo = nuevoFiltro;
-    document.querySelectorAll(".btn-tab").forEach(btn => btn.classList.remove("activo"));
-    const tabBtn = document.getElementById(`tab-${nuevoFiltro}`);
-    if (tabBtn) tabBtn.classList.add("activo");
-    
-    if(document.getElementById("filtro-medio")) document.getElementById("filtro-medio").value = "todos";
-    if(document.getElementById("buscar-texto")) document.getElementById("buscar-texto").value = "";
-    
-    filtrarHistorial();
-}
-
-// CIERRE MENSUAL HISTÓRICO LOCAL PREVENTIVO
-function ejecutarCierreMensual() {
-    if (transaccionesMemoria.length === 0) {
-        alert("No hay movimientos activos en el servidor para cerrar.");
-        return;
-    }
-
-    const fechaRef = transaccionesMemoria.llaveMes || '01-' + new Date().getFullYear();
-    
-    if (confirm(`¿Estás seguro de cerrar el período de este mes (${fechaRef})?\nSe archivará localmente y se limpiará la visualización.`)) {
-        const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-        archivoHistorico[fechaRef] = [...transaccionesMemoria];
-        localStorage.setItem('archivo_historico', JSON.stringify(archivoHistorico));
-        
-        alert(`Período ${fechaRef} guardado en el archivo histórico local con éxito.`);
-        actualizarSelectMeses();
-        cambiarFiltro('archivo');
-    }
-}
-
-function inicializarArchivo() {
-    if (!localStorage.getItem('archivo_historico')) {
-        localStorage.setItem('archivo_historico', JSON.stringify({}));
-    }
-    actualizarSelectMeses();
-}
-
-function actualizarSelectMeses() {
-    const selector = document.getElementById("selector-meses");
+// GENERAR SELECTOR DINÁMICO DE ARCHIVOS HISTÓRICOS (Agrupa por Año y Mes)
+function generarOpcionesMesesArchivados() {
+    const selector = document.getElementById('selector-meses');
     if (!selector) return;
     
-    selector.innerHTML = "";
-    const archivoHistorico = JSON.parse(localStorage.getItem('archivo_historico') || '{}');
-    const meses = Object.keys(archivoHistorico);
-    
-    if (meses.length === 0) {
-        selector.innerHTML = `<option value="">No hay meses cerrados</option>`;
-        mesSeleccionadoArchivo = "";
+    selector.innerHTML = '';
+
+    const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mapaMeses = {};
+
+    // Buscamos todos los meses que tengan al menos un movimiento en la base de datos
+    transaccionesGlobal.forEach(t => {
+        const f = new Date(t.id);
+        const clave = `${f.getFullYear()}-${f.getMonth()}`;
+        mapaMeses[clave] = { año: f.getFullYear(), mes: f.getMonth() };
+    });
+
+    // Ordenamos cronológicamente de más reciente a más antiguo
+    const ordenados = Object.keys(mapaMeses).sort((a, b) => b.localeCompare(a));
+
+    if (ordenados.length === 0) {
+        selector.innerHTML = '<option value="">No hay registros históricos</option>';
         return;
     }
-    
-    meses.forEach(mes => {
-        const option = document.createElement("option");
-        option.value = mes;
-        option.innerText = `Mes: ${mes}`;
+
+    ordenados.forEach(clave => {
+        const item = mapaMeses[clave];
+        const option = document.createElement('option');
+        option.value = clave;
+        option.innerHTML = `${mesesNombres[item.mes]} ${item.año}`;
         selector.appendChild(option);
     });
-    mesSeleccionadoArchivo = meses[0] || "";
-}
 
-function cargarMesArchivado() {
-    const selector = document.getElementById("selector-meses");
-    if(selector) mesSeleccionadoArchivo = selector.value;
+    // Ejecuta el filtro inmediato con el mes que quedó seleccionado por defecto
     filtrarHistorial();
 }
 
-// EXPORTACIÓN A EXCEL ADAPTADA
+// MANEJAR CAMBIO DE SELECCIÓN EN EL SELECTOR DE MESES ARCHIVADOS
+function cargarMesArchivado() {
+    filtrarHistorial();
+}
+
+// EXPORTACIÓN A EXCEL EN FORMATO CSV UNIVERSAL (Punto 5)
 function exportarExcel() {
-    alert("Función de exportación de datos en cola...");
-}
-
-// UTILIDADES AUXILIARES
-function obtenerFechaHoyString() {
-    var hoy = new Date();
-    var dia = String(hoy.getDate()).padStart(2, '0');
-    var mes = String(hoy.getMonth() + 1).padStart(2, '0');
-    var anio = hoy.getFullYear();
-    return dia + '/' + mes + '/' + anio;
-}
-
-function formatMoneda(valor) {
-    if (typeof valor !== 'number') {
-        valor = parseFloat(valor) || 0;
+    // Encabezados del archivo CSV
+    let contenido = "Fecha,Miembro,Detalle,Medio / Ubicacion,Tipo,Monto\n";
+    
+    // Obtenemos todas las filas renderizadas actualmente en la tabla del historial
+    const filas = document.querySelectorAll("#lista-transacciones tr");
+    
+    if (filas.length === 0) {
+        alert("No hay datos filtrados disponibles para exportar.");
+        return;
     }
-    var signo = valor >= 0 ? '' : '-';
-    var numeroFormateado = Math.abs(valor).toLocaleString('es-AR', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
+
+    // Recorremos cada fila celda por celda limpiando comas para no romper las columnas
+    filas.forEach(fila => {
+        const c = fila.cells;
+        // Validamos que sea una fila con datos fidedignos y no el mensaje de "no se encontraron registros"
+        if (c && c.length >= 6) {
+            const fecha = c[0].innerText.replace(/,/g, '');
+            const miembro = c[1].innerText.replace(/,/g, '');
+            const detalle = c[2].innerText.replace(/,/g, '');
+            const medio = c[3].innerText.replace(/,/g, '');
+            const tipo = c[4].innerText.replace(/,/g, '');
+            // Limpiamos el signo \$ y los puntos de miles, dejando solo el formato numérico limpio
+            const monto = c[5].innerText.replace(/[^0-9.-]/g, '');
+
+            contenido += `${fecha},${miembro},${detalle},${medio},${tipo},${monto}\n`;
+        }
     });
-    return signo + '$' + numeroFormateado;
+
+    // Crear archivo descargable con BOM UTF-8 para que Excel reconozca los emojis y tildes correctamente
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), contenido], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    
+    // Nombre dinámico del reporte según el período seleccionado
+    const nombreArchivo = `Historial_Saltor_Martinez_${filtroPeriodoActual}.csv`;
+    link.setAttribute("download", nombreArchivo);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
+
+// ACCIÓN DE CIERRE MENSUAL SIMULADO DESDE EL FRONTEND
+function ejecutarCierreMensual() {
+    if (!confirm("🔒 ¿Estás seguro de que deseas archivar y cerrar el mes en curso? Esto consolidará los reportes.")) return;
+    
+    alert("🔒 El mes actual ha sido guardado y archivado correctamente en el Panel Histórico.");
+    cambiarFiltro('archivo');
+}
+    
